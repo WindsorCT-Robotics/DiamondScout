@@ -47,12 +47,14 @@ type Points = Points of int
 type Score =
     | FlatScore of Points
     | TieredScore of Dictionary<ScoringTier, Points>
+    
+type GamePhase =
+    | Teleop
+    | Autonomous
+    | Endgame
 
 [<Struct>]
-type PhaseScores =
-    { Teleop: Score voption
-      Autonomous: Score voption
-      Endgame: Score voption }
+type PhaseScores = PhaseScores of Dictionary<GamePhase, Score>
 
 type RankPointThreshold =
     | PointsThreshold of Points * RankingPoints
