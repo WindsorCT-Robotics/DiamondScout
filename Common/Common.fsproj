@@ -11,8 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Identifiers.fs" />
     <Compile Include="Teams.fs" />
     <Compile Include="MatchData.fs" />
+    <Compile Include="GameData.fs" />
   </ItemGroup>
 
 </Project>

@@ -2,6 +2,7 @@ namespace ParagonRobotics.DiamondScout.Common.MatchData
 
 open System.Collections.Generic
 open ParagonRobotics.DiamondScout.Common
+open ParagonRobotics.DiamondScout.Common.Identifiers
 
 [<Struct>]
 type Alliance =
@@ -47,14 +48,15 @@ type Score =
     | FlatScore of Points
     | TieredScore of Dictionary<ScoringTier, Points>
 
+[<Struct>]
 type PhaseScores =
     { Teleop: Score voption
       Autonomous: Score voption
       Endgame: Score voption }
 
 type RankPointThreshold =
-    |PointsThreshold of Points
-    | ScoreThreshold of int
+    | PointsThreshold of Points * RankingPoints
+    | ScoreThreshold of int * RankingPoints
 
 [<Struct>]
 type ScoringElement =
@@ -86,15 +88,27 @@ type Foul =
     | Minor
     | Major
 
+[<Struct>]
 type Card =
     | Yellow
     | Red
 
+[<Struct>]
+type Infraction =
+    { Foul: Foul voption
+      Card: Card voption }
+
 type ScoutResult =
     { Team: Team
+      Alliance: Alliance
       Scores: Score list
       RankingPoints: RankingPoints
       Endgame: Endgame
       EmergencyStop: EmergencyStop voption
-      Fouls: Foul list
-      Cards: Card list }
+      Infractions: Infraction list }
+
+type MatchData =
+    { Name: string
+      Results: ScoutResult list }
+
+type EventData = { Name: string; Matches: MatchId list }
