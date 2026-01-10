@@ -86,10 +86,15 @@ type Foul =
     | Minor
     | Major
 
+type Card =
+    | Yellow
+    | Red
+
 type ScoutResult =
     { Team: Team
       Scores: Score list
       RankingPoints: RankingPoints
       Endgame: Endgame
       EmergencyStop: EmergencyStop voption
-      Fouls: Foul list }
+      Fouls: Foul list
+      Cards: Card list }
