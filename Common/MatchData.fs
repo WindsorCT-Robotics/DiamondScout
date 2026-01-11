@@ -3,6 +3,7 @@ namespace ParagonRobotics.DiamondScout.Common.MatchData
 open System.Collections.Generic
 open ParagonRobotics.DiamondScout.Common
 open ParagonRobotics.DiamondScout.Common.Identifiers
+open ParagonRobotics.Diamondscout.Common.PitData
 
 [<Struct>]
 type Alliance =
@@ -10,26 +11,7 @@ type Alliance =
     | Blue
 
 [<Struct>]
-type Drivetrain =
-    | Swerve
-    | Mech
-    | Tank
-    | Other of string
-
-    override this.ToString() =
-        match this with
-        | Swerve -> "Swerve"
-        | Mech -> "Mecanum"
-        | Tank -> "Tank"
-        | Other s -> s
-
-[<Struct>]
 type ScoringTier = ScoringTier of int
-
-[<Struct>]
-type EndgameCapable =
-    | TierCapability of ScoringTier
-    | NotCapable
 
 [<Struct>]
 [<RequireQualifiedAccess>]
@@ -100,7 +82,7 @@ type Infraction =
     { Foul: Foul voption
       Card: Card voption }
 
-type ScoutResult =
+type MatchScoutResult =
     { Team: Team
       Alliance: Alliance
       Scores: Score list
