@@ -11,6 +11,12 @@ type Alliance =
     | Blue
 
 [<Struct>]
+type AutoScore = 
+    | AutoScored
+    | AutoNotScored
+    | NoAuto
+
+[<Struct>]
 type ScoringTier = ScoringTier of int
 
 [<Struct>]
@@ -85,6 +91,7 @@ type Infraction =
 type MatchScoutResult =
     { Team: Team
       Alliance: Alliance
+      Autos: AutoScore list
       Scores: Score list
       RankingPoints: RankingPoints
       Endgame: Endgame

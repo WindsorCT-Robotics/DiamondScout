@@ -24,9 +24,8 @@ type EndgameCapable =
 type PitScoutResult =
     { Team: Team
       EndgameCapable: EndgameCapable
-      Drivetrain: Drivetrain
- }
+      Drivetrain: Drivetrain }
 
 type PitData =
-    { TeamNumber: TeamNumber
+    { Team: Team
       Results: PitScoutResult list }
