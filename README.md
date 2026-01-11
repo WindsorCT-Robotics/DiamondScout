@@ -1,6 +1,6 @@
-# DiamondScout - Team Paragon Scouting App
+# DiamondScout by Paragon Robotics
 
-This is the repository for Team Paragon's Scouting App, DiamondScount.
+This is the repository for Paragon Robotics' Scouting App, DiamondScount.
 
 ## Goals
 
