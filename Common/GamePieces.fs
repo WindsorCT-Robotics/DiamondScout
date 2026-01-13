@@ -6,6 +6,5 @@ open ParagonRobotics.DiamondScout.Common.Scoring
 
 type GamePiece =
     { Name: string
-      Value: Score
-      RankPoints: RankingPointGrant list
-      PhasesAvailable: PhaseMap<bool> }
+      Value: PhaseMap<Score option>
+      RankPoints: RankingPointGrant list }
