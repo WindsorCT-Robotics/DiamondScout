@@ -13,48 +13,11 @@ type Alliance =
     | Blue
 
 [<Struct>]
-type AutoScore = 
-    | AutoScored
-    | AutoNotScored
-    | NoAuto
-
-[<Struct>]
-type ScoringTier = ScoringTier of int
-
-[<Struct>]
 [<RequireQualifiedAccess>]
 type EndgameResult =
     | Success of ScoringTier
     | Failure
     | NotAttempted
-
-[<Struct>]
-type RankingPoints = RankingPoints of int
-
-[<Struct>]
-type Points = Points of int
-
-type Score =
-    | FlatScore of Points
-    | TieredScore of Dictionary<ScoringTier, Points>
-    
-type GamePhase =
-    | Teleop
-    | Autonomous
-    | Endgame
-
-[<Struct>]
-type PhaseScores = PhaseScores of Dictionary<GamePhase, Score>
-
-type RankPointThreshold =
-    | PointsThreshold of Points * RankingPoints
-    | ScoreThreshold of int * RankingPoints
-
-[<Struct>]
-type ScoringElement =
-    { Name: string
-      ScoreDefinition: PhaseScores
-      RankPointThreshold: RankingPoints }
 
 [<Struct>]
 type BotStrategy =
@@ -75,33 +38,18 @@ type EmergencyStop =
     | AutoEmergency
     | Emergency
 
-[<Struct>]
-type Foul =
-    | Minor
-    | Major
-
-[<Struct>]
-type Card =
-    | Yellow
-    | Red
-
-[<Struct>]
-type Infraction =
-    { Foul: Foul voption
-      Card: Card voption }
-
 type MatchScoutResult =
     { Team: Team
       Alliance: Alliance
-      Autos: AutoScore list
-      Scores: Score list
       RankingPoints: RankingPoints
+      Scoring: PhaseMap<Points option>
       Endgame: Endgame
-      EmergencyStop: EmergencyStop voption
-      Infractions: Infraction list }
+      EmergencyStop: EmergencyStop option
+      Infractions: InfractionId list }
 
-type MatchData =
+[<Struct>]
+type MatchNumber = MatchNumber of int
+
+type EventData =
     { Name: string
-      Results: ScoutResult list }
-
-type EventData = { Name: string; Matches: MatchId list }
+      Matches: Map<MatchNumber, MatchScoutResult> }
