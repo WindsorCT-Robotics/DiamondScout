@@ -1,12 +1,12 @@
 module ParagonRobotics.DiamondScout.Common.GameData
 
 open System
-open ParagonRobotics.DiamondScout.Common.MatchData
+open ParagonRobotics.DiamondScout.Common.Identifiers
 
 type Game =
     { Year: DateOnly
       Name: string
-      AutonomousChallenges: ScoringElement list
-      GamePieces: ScoringElement list
-      EndgameChallenge: ScoringElement list
-      Infractions: Infraction list }
+      GamePieces: GamePieceId list
+      Infractions: InfractionId list
+      PitResults: PitResultId list
+      MatchResults: MatchResultId list }
