@@ -5,7 +5,7 @@ open ParagonRobotics.DiamondScout.Common.Scoring
 open ParagonRobotics.DiamondScout.Common.Teams
 
 [<Struct>]
-type Drivetrain = 
+type Drivetrain =
     | Swerve
     | Mech
     | Tank

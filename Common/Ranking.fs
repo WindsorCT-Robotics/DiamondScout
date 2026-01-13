@@ -8,7 +8,7 @@ type RankingPoints = RankingPoints of int
 type RankingPointsThreshold =
     | PointsThreshold of Points
     | ScoreThreshold of int
-    
+
 type RankingPointGrant =
-    { Value: RankingPoints; Threshold: RankingPointsThreshold }
-    
+    { Value: RankingPoints
+      Threshold: RankingPointsThreshold }
