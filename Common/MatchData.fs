@@ -42,7 +42,7 @@ type MatchScoutResult =
     { Team: Team
       Alliance: Alliance
       RankingPoints: RankingPoints
-      Scoring: PhaseMap<Points option>
+      Scoring: PhaseMap<Score option>
       Endgame: Endgame
       EmergencyStop: EmergencyStop option
       Infractions: InfractionId list }
