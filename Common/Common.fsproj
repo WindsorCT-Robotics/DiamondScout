@@ -13,6 +13,12 @@
   <ItemGroup>
     <Compile Include="Identifiers.fs" />
     <Compile Include="Teams.fs" />
+    <Compile Include="Scoring.fs" />
+    <Compile Include="Ranking.fs" />
+    <Compile Include="Phase.fs" />
+    <Compile Include="GamePieces.fs" />
+    <Compile Include="Infractions.fs" />
+    <Compile Include="PitData.fs" />
     <Compile Include="MatchData.fs" />
     <Compile Include="GameData.fs" />
   </ItemGroup>

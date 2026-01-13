@@ -1,9 +1,11 @@
-namespace ParagonRobotics.DiamondScout.Common.MatchData
+module ParagonRobotics.DiamondScout.Common.MatchData
 
-open System.Collections.Generic
-open ParagonRobotics.DiamondScout.Common
+open ParagonRobotics.DiamondScout.Common.Phase
+open ParagonRobotics.DiamondScout.Common.PitData
+open ParagonRobotics.DiamondScout.Common.Ranking
+open ParagonRobotics.DiamondScout.Common.Scoring
+open ParagonRobotics.DiamondScout.Common.Teams
 open ParagonRobotics.DiamondScout.Common.Identifiers
-open ParagonRobotics.Diamondscout.Common.PitData
 
 [<Struct>]
 type Alliance =

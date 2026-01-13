@@ -1,4 +1,4 @@
-﻿namespace ParagonRobotics.DiamondScout.Common
+﻿module ParagonRobotics.DiamondScout.Common.Teams
 
 [<Struct>]
 type TeamNumber = TeamNumber of int

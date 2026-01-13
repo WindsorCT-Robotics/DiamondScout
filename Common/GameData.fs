@@ -1,4 +1,4 @@
-namespace ParagonRobotics.DiamondScout.Common.GameData
+module ParagonRobotics.DiamondScout.Common.GameData
 
 open System
 open ParagonRobotics.DiamondScout.Common.MatchData

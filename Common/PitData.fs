@@ -1,5 +1,7 @@
-﻿namespace ParagonRobotics.DiamondScout.Common.PitData
+﻿module ParagonRobotics.DiamondScout.Common.PitData
 
+open ParagonRobotics.DiamondScout.Common.Identifiers
+open ParagonRobotics.DiamondScout.Common.Scoring
 open ParagonRobotics.DiamondScout.Common.Teams
 
 [<Struct>]
