@@ -46,10 +46,3 @@ type MatchScoutResult =
       Endgame: Endgame
       EmergencyStop: EmergencyStop option
       Infractions: InfractionId list }
-
-[<Struct>]
-type MatchNumber = MatchNumber of int
-
-type EventData =
-    { Name: string
-      Matches: Map<MatchNumber, MatchScoutResult> }

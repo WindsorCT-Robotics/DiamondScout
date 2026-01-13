@@ -9,4 +9,4 @@ type Game =
       GamePieces: GamePieceId list
       Infractions: InfractionId list
       PitResults: PitResultId list
-      MatchResults: MatchResultId list }
+      Events: EventId list }
