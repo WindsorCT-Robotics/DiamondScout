@@ -24,7 +24,8 @@ type EndgameCapable =
     | NotCapable
 
 type PitScoutResult =
-    { Team: Team
+    { RobotName: string
+      Team: Team
       Game: GameId
       EndgameCapable: EndgameCapable
       Drivetrain: Drivetrain }
