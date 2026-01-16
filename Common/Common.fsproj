@@ -8,6 +8,7 @@
     <Company>Paragon Robotics</Company>
     <Product>DiamondScout</Product>
     <NeutralLanguage>en-US</NeutralLanguage>
+    <WarnOn>3390</WarnOn>
   </PropertyGroup>
 
   <ItemGroup>
