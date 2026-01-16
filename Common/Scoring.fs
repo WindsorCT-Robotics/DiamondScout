@@ -4,7 +4,9 @@ module ParagonRobotics.DiamondScout.Common.Scoring
 type ScoringTier = { Name: string; Level: int }
 
 [<Struct>]
-type Points = Points of int
+type Points =
+    | Points of int
+    static member Zero = Points 0
 
 type Score =
     | FlatScore of Points
