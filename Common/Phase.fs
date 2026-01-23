@@ -9,10 +9,12 @@ type Phase =
     | Autonomous of SubPhase list
     | Endgame of SubPhase list
 
+type SubPhaseMapping<'T> = Map<SubPhase, 'T>
+
 type PhaseMap<'a> =
-    { Teleop: 'a list
-      Autonomous: 'a list
-      Endgame: 'a list }
+    { Teleop: SubPhaseMapping<'a> option
+      Autonomous: SubPhaseMapping<'a> option
+      Endgame: SubPhaseMapping<'a> option }
 
     member this.Item
         with get (phase: Phase) =
@@ -20,15 +22,9 @@ type PhaseMap<'a> =
             | Teleop _ -> this.Teleop
             | Autonomous _ -> this.Autonomous
             | Endgame _ -> this.Endgame
-    member this.ZipPhases teleop autonomous endgame =
-        match teleop, autonomous, endgame with
-        | Teleop teleopSubPhases, _, _ when teleopSubPhases.Length <> this.Teleop.Length -> invalidOp "Failed to map defined items to Teleop phase: length mismatch"
-        | _, Autonomous autonomousSubPhases, _ when autonomousSubPhases.Length <> this.Autonomous.Length -> failwith "Failed to map defined items to Autonomous phase: length mismatch"
-        | _, _, Endgame endgameSubPhases when endgameSubPhases.Length <> this.Endgame.Length -> failwith "Failed to map defined items to Endgame phase: length mismatch"
-        | Teleop teleopSubPhases, Autonomous autonomousSubPhases, Endgame endgameSubPhases ->
-            (List.zip this.Teleop teleopSubPhases, List.zip this.Autonomous autonomousSubPhases, List.zip this.Endgame endgameSubPhases)
-        | _ -> invalidOp "Failed to map defined items to game phases: Phase definitions must be provided for all phases in order: teleop, autonomous, endgame"
-
+    static member ofMap teleop autonomous endgame = { Teleop = teleop; Autonomous = autonomous; Endgame = endgame }
+    static member ofList (teleop: (SubPhase * 'a) seq option) (autonomous: (SubPhase * 'a) seq option) (endgame: (SubPhase * 'a) seq option) = { Teleop = Option.map Map.ofSeq teleop; Autonomous = Option.map Map.ofSeq autonomous; Endgame = Option.map Map.ofSeq endgame }
+    
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module PhaseMapModule =
     let map f m =
