@@ -1,4 +1,4 @@
-﻿module ParagonRobotics.DiamondScout.Common.PitData
+﻿module ParagonRobotics.DiamondScout.Common.RobotData
 
 open ParagonRobotics.DiamondScout.Common.Identifiers
 open ParagonRobotics.DiamondScout.Common.Scoring
@@ -23,8 +23,8 @@ type EndgameCapable =
     | TierCapability of ScoringTier
     | NotCapable
 
-type PitScoutResult =
-    { RobotName: string
+type Robot =
+    { Name: string
       Team: Team
       Game: GameId
       EndgameCapable: EndgameCapable

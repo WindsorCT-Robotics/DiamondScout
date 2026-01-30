@@ -25,4 +25,4 @@ type InfractionId = InfractionId of int
 type GamePieceId = GamePieceId of int
 
 [<Struct>]
-type MatchPhaseId = MatchPhaseId of int
+type SubPhaseId = SubPhaseId of int

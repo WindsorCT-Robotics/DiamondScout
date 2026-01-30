@@ -1,10 +1,7 @@
 module ParagonRobotics.DiamondScout.Common.Events
 
-open ParagonRobotics.DiamondScout.Common.MatchData
-
-[<Struct>]
-type MatchNumber = MatchNumber of int
+open ParagonRobotics.DiamondScout.Common.Identifiers
 
 type Event =
     { Name: string
-      Matches: Map<MatchNumber, MatchScoutResult> }
+      Matches: MatchId list }
