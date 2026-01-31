@@ -23,9 +23,22 @@ type EndgameCapable =
     | TierCapability of ScoringTier
     | NotCapable
 
+type ParameterType =
+    // change to generic type for dropdown later 
+    | Dropdown of string list
+    | TextBox of string 
+    | NumericSpinner of int list
+    | RadialSelection of string list
+
+type Parameter =
+    {
+        Name: string
+        Value: ParameterType }
+    
 type Robot =
     { Name: string
       Team: Team
       Game: GameId
       EndgameCapable: EndgameCapable
-      Drivetrain: Drivetrain }
+      Drivetrain: Drivetrain
+      Parameters: Parameter list }
