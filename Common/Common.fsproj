@@ -19,7 +19,7 @@
     <Compile Include="Phase.fs" />
     <Compile Include="GamePieces.fs" />
     <Compile Include="Infractions.fs" />
-    <Compile Include="PitData.fs" />
+    <Compile Include="RobotData.fs" />
     <Compile Include="MatchData.fs" />
     <Compile Include="Events.fs" />
     <Compile Include="GameData.fs" />
