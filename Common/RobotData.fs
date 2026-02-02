@@ -23,12 +23,14 @@ type EndgameCapable =
     | TierCapability of ScoringTier
     | NotCapable
 
+type NumericSpinnerType =
+    | IntegralSpinner of int
+    | DecimalSpinner of double
 type ParameterType =
     // change to generic type for dropdown later
     | Dropdown of string list
     | TextBox of string
-    | NumericSpinner of int list
-    | DecimalNumericSpinner of float
+    | NumericSpinner of NumericSpinnerType
     | RadialSelection of string list
     | MultiSelect of string list
 
