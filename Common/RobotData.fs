@@ -24,17 +24,16 @@ type EndgameCapable =
     | NotCapable
 
 type ParameterType =
-    // change to generic type for dropdown later 
+    // change to generic type for dropdown later
     | Dropdown of string list
-    | TextBox of string 
+    | TextBox of string
     | NumericSpinner of int list
+    | DecimalNumericSpinner of float
     | RadialSelection of string list
+    | MultiSelect of string list
 
-type Parameter =
-    {
-        Name: string
-        Value: ParameterType }
-    
+type Parameter = { Name: string; Value: ParameterType }
+
 type Robot =
     { Name: string
       Team: Team
