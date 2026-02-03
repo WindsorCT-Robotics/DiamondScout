@@ -1,6 +1,64 @@
-@page "/GameYear"
-<h3>GameYear</h3>
+@page "/gamedyear"
+@using DiamondScout.Web.Services
+@using System
+@inject GameYearCatalog Catalog
+
+<h3>Game Selection</h3>
+
+<label for="yearSelect">Year:</label>
+<select id="yearSelect" @bind="SelectedYear" @bind:after="OnYearChanged">
+    @foreach (var y in Years)
+    {
+        <option value="@y">@y</option>
+    }
+</select>
+
+<hr />
+
+<h4>@SelectedYear</h4>
+<p><strong>Status:</strong> @Result.Status</p>
+
+@if (Result.Status == "To Be Determined")
+{
+    <p>To Be Determined until Feb 1, @SelectedYear.</p>
+}
+else if (Result.Game is null)
+{
+    <p>No configured game data for @SelectedYear yet.</p>
+}
+else
+{
+    <p><strong>Game Name:</strong> @Result.Game.Name</p>
+
+    <h5>What to show as “options”</h5>
+    <ul>
+        <li>Phases: @Result.Game.Phases.Length</li>
+        <li>Game pieces: @Result.Game.GamePieces.Length</li>
+        <li>Infractions: @Result.Game.Infractions.Length</li>
+        <li>Pit results: @Result.Game.PitResults.Length</li>
+        <li>Events: @Result.Game.Events.Length</li>
+        <li>Parameters: @Result.Game.Parameters.Length</li>
+    </ul>
+}
 
 @code {
-    
+    private List<int> Years = new();
+    private int SelectedYear;
+    private GameYearCatalog.SelectionResult Result = new(0, "To Be Determined", null);
+
+    protected override void OnInitialized()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        Years = Catalog.GetSelectableYears(today).ToList();
+        SelectedYear = today.Year;
+
+        Result = Catalog.GetSelection(SelectedYear, today);
+    }
+
+    private void OnYearChanged()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        Result = Catalog.GetSelection(SelectedYear, today);
+    }
 }
