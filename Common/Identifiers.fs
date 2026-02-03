@@ -13,7 +13,7 @@ type EventId = EventId of int
 type GameId = GameId of int
 
 [<Struct>]
-type PitResultId = PitResultId of int
+type RobotId = RobotId of int
 
 [<Struct>]
 type MatchResultId = MatchResultId of int
@@ -26,3 +26,6 @@ type GamePieceId = GamePieceId of int
 
 [<Struct>]
 type SubPhaseId = SubPhaseId of int
+
+[<Struct>]
+type ParameterId = ParameterId of int
