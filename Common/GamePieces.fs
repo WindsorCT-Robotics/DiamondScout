@@ -8,3 +8,5 @@ type GamePiece =
     { Name: string
       Value: SubPhaseMap<Score option>
       RankPoints: RankingPointGrant list }
+
+let create name value rankPoints = { Name = name; Value = value; RankPoints = rankPoints }
