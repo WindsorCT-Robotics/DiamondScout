@@ -1,5 +1,116 @@
-<h3>QrCodeExport</h3>
+@* QrCodeExport.razor *@
+@using ParagonRobotics.DiamondScout.Common
+@using QRCoder
+@using static ParagonRobotics.DiamondScout.Common.RobotData
+@using static ParagonRobotics.DiamondScout.Common.Teams
+@using static ParagonRobotics.DiamondScout.Common.Scoring
+@inject IJSRuntime JSRuntime
+
+<div class="qr-export-container">
+    <button @onclick="GenerateQrCode" class="btn btn-primary">Generate QR Code</button>
+    
+    @if (!string.IsNullOrEmpty(QrCodeImage))
+    {
+        <div class="qr-code-display">
+            <img src="@QrCodeImage" alt="QR Code" />
+            <button @onclick="DownloadQrCode" class="btn btn-secondary">Download QR Code</button>
+        </div>
+    }
+</div>
 
 @code {
+    [Parameter]
+    public RobotData.Robot? RobotData { get; set; }
     
+    private string QrCodeImage = string.Empty;
+    
+    private void GenerateQrCode()
+    {
+        if (RobotData == null)
+            return;
+        
+        string csvData = RobotToCsvRow(RobotData);
+        
+        using var qrGenerator = new QRCodeGenerator();
+        using var qrCodeData = qrGenerator.CreateQrCode(csvData, QRCodeGenerator.ECCLevel.Q);
+        using var qrCode = new PngByteQRCode(qrCodeData);
+        byte[] qrCodeBytes = qrCode.GetGraphic(20);
+        
+        QrCodeImage = $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
+    }
+    
+    private string RobotToCsvRow(RobotData.Robot robot)
+    {
+        // Extract values from F# discriminated unions
+        var teamNumber = ((Teams.TeamNumber.TeamNumber)robot.Team.TeamNumber).teamNumber;
+        var teamName = ((Teams.TeamName.TeamName)robot.Team.TeamName).teamName;
+        var robotName = robot.Name;
+        var drivetrain = robot.Drivetrain.ToString();
+        var gameId = robot.Game.ToString();
+        var endgameCapable = FormatEndgameCapable(robot.EndgameCapable);
+        
+        return $"{teamNumber.ToString()},\"{EscapeCsv(teamName)}\",\"{EscapeCsv(robotName)}\",\"{EscapeCsv(drivetrain)}\",\"{EscapeCsv(gameId)}\",\"{EscapeCsv(endgameCapable)}\"";
+    }
+    
+    private string FormatEndgameCapable(RobotData.EndgameCapable capable)
+    {
+        if (capable.IsNotCapable)
+            return "Not Capable";
+        
+        if (capable.IsTierCapability)
+        {
+            var tier = (RobotData.EndgameCapable.TierCapability)capable;
+            var scoringTier = tier.Item;
+            return $"Tier: {scoringTier.Name} (Level {scoringTier.Level.ToString()})";
+        }
+        
+        return "Unknown";
+    }
+    
+    private string EscapeCsv(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+        
+        if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
+        {
+            return value.Replace("\"", "\"\"");
+        }
+        return value;
+    }
+    
+    private async Task DownloadQrCode()
+    {
+        if (string.IsNullOrEmpty(QrCodeImage) || RobotData == null)
+            return;
+        
+        var teamNum = ((Teams.TeamNumber.TeamNumber)RobotData.Team.TeamNumber).teamNumber;
+        await JSRuntime.InvokeVoidAsync("downloadImage", QrCodeImage, $"PitScout_{teamNum}.png");
+    }
 }
+
+<style>
+    .qr-export-container {
+        margin: 20px 0;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+    }
+    
+    .qr-code-display {
+        margin-top: 20px;
+        text-align: center;
+    }
+    
+    .qr-code-display img {
+        max-width: 300px;
+        border: 2px solid #000;
+        padding: 10px;
+        background: white;
+    }
+    
+    .btn {
+        margin: 5px;
+        padding: 10px 20px;
+    }
+</style>

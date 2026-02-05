@@ -1,6 +1,90 @@
 ﻿@page "/pitscout"
 @inject HttpClient Http
+@using ParagonRobotics.DiamondScout.Common
+@using static ParagonRobotics.DiamondScout.Common.RobotData
+@using static ParagonRobotics.DiamondScout.Common.Teams
+@using static ParagonRobotics.DiamondScout.Common.Identifiers
+
 
 <PageTitle>Pit Scouting</PageTitle>
 
-<h1>Pit Scouting</h1>
+<h1>
+    Currently Pit Scouting -
+    <strong>@PitScoutTeamNumber - @PitScoutTeamName</strong>
+</h1>
+
+<div class="mt-3">
+    <!-- Eventually, this will be a dropdown with the list of 
+        teams in numerical order 
+        pulled from the FIRST API before competition
+    -->
+    <h3>Team Number</h3>
+    <input type="number" @bind="PitScoutTeamNumber"/>
+    <input type="text" @bind="PitScoutTeamName"/>
+</div>
+
+<div class="mt-3">
+    <h3>Drivetrain type</h3>
+    <select @bind="DrivetrainString" @bind:event="oninput">
+        <option value="">-- Select Drivetrain --</option>
+        <option value="Swerve">Swerve</option>
+        <option value="Mech">Mecanum</option>
+        <option value="Tank">Tank</option>
+        <option value="Other">Other</option>
+    </select>
+    
+    @if (DrivetrainString == "Other")
+    {
+        <div>
+            <label>Please specify:</label>
+            <input type="text" @bind="OtherDrivetrain" placeholder="Enter drivetrain type"/>
+        </div>
+    }
+</div>
+
+<QrCodeExport RobotData="@CurrentRobot" />
+
+@code {
+    private string DrivetrainString = "";
+    private string OtherDrivetrain = "";
+    
+    private RobotData.Drivetrain Drivetrain
+    {
+        get
+        {
+            return DrivetrainString switch
+            {
+                "Swerve" => RobotData.Drivetrain.Swerve,
+                "Mech" => RobotData.Drivetrain.Mech,
+                "Tank" => RobotData.Drivetrain.Tank,
+                "Other" => RobotData.Drivetrain.NewOther(OtherDrivetrain),
+                _ => RobotData.Drivetrain.NewOther("Unknown")
+            };
+        }
+    }
+    
+    private int PitScoutTeamNumber = 571;
+    private string PitScoutTeamName = "Paragon Robotics";
+    
+    private Robot? CurrentRobot
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(DrivetrainString))
+                return null;
+            
+            return new Robot
+            {
+                Name = $"Robot {PitScoutTeamNumber}",
+                Team = new Team
+                {
+                    TeamNumber = TeamNumber.NewTeamNumber(PitScoutTeamNumber),
+                    TeamName = TeamName.NewTeamName(PitScoutTeamName)
+                },
+                Game = GameId.NewGameId("2025"),
+                EndgameCapable = EndgameCapable.NotCapable,
+                Drivetrain = Drivetrain
+            };
+        }
+    }
+}
