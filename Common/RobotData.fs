@@ -29,3 +29,5 @@ type Robot =
       Game: GameId
       EndgameCapable: EndgameCapable
       Drivetrain: Drivetrain }
+
+let create name team game scoringTier drivetrain = { Name = name; Team = team; Game = game; EndgameCapable = TierCapability scoringTier; Drivetrain = drivetrain }

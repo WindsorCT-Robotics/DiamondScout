@@ -22,6 +22,7 @@
     <Compile Include="RobotData.fs" />
     <Compile Include="MatchData.fs" />
     <Compile Include="Events.fs" />
+    <Compile Include="Parameters.fs" />
     <Compile Include="GameData.fs" />
   </ItemGroup>
 

@@ -8,7 +8,7 @@ open ParagonRobotics.DiamondScout.Common.Teams
 open ParagonRobotics.DiamondScout.Common.Identifiers
 
 [<Struct>]
-type MatchNumber = MatchNumber of int
+type MatchNumber = MatchNumber of uint
 
 [<Struct>]
 type Alliance =
@@ -52,3 +52,5 @@ type MatchScoutResult =
       Infractions: InfractionId list }
 
 type Match = { MatchNumber: MatchNumber; MatchScoutResults: MatchScoutResult list }
+
+let createMatch matchNumber matchScoutResults = { MatchNumber = matchNumber; MatchScoutResults = matchScoutResults }

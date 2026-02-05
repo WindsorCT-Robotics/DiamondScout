@@ -6,7 +6,7 @@ type ScoringTier = {
     /// The name of the scoring tier.
     Name: string
     /// The level of the scoring tier.
-    Level: int
+    Level: uint
 }
 
 /// <summary>The number of points a <see cref="T:ParagonRobotics.DiamondScout.Common.Scoring.Score"/> is worth.</summary>
@@ -16,9 +16,9 @@ type Points =
     /// Creates a new <see cref="T:ParagonRobotics.DiamondScout.Common.Scoring.Points"/> instance.
     /// </summary>
     /// <param name="points">The number of points.</param>
-    | Points of points: int
+    | Points of points: uint
     /// Represents zero points.
-    static member Zero = Points 0
+    static member Zero = Points 0u
 
 ///<summary>
 /// Represents completing a game's objective and the value of the objective in <see cref="T:ParagonRobotics.DiamondScout.Common.Scoring.Points"/>.

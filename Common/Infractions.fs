@@ -2,8 +2,8 @@ module ParagonRobotics.DiamondScout.Common.Infractions
 
 [<Struct>]
 type Foul =
-    | Minor
-    | Major
+    | Minor of Penalty: uint
+    | Major of Penalty: uint
 
 [<Struct>]
 type Card =
