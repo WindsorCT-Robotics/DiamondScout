@@ -29,3 +29,6 @@ type SubPhaseId = SubPhaseId of int
 
 [<Struct>]
 type ParameterId = ParameterId of int
+
+[<Struct>]
+type RobotParametersId = RobotParametersId of int

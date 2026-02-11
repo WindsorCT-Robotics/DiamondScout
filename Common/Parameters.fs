@@ -6,7 +6,6 @@ type NumericSpinnerType =
     | IntegralSpinner of int
     | DecimalSpinner of double
 
-/// The *definition* of a parameter (its single, shared type + constraints + default).
 type ParameterSpec =
     | Dropdown of options: string list * defaultChoice: string
     | TextBox of defaultText: string
@@ -14,13 +13,11 @@ type ParameterSpec =
     | RadialSelection of options: string list * defaultChoice: string
     | MultiSelect of options: string list * defaultChoices: string list
 
-/// A single parameter definition that can be shared by multiple robots.
 type ParameterDefinition =
     { Id: ParameterId
       Name: string
       Spec: ParameterSpec }
 
-/// The *per-robot* value for a parameter definition.
 type ParameterValue =
     | DropdownChoice of string
     | Text of string
@@ -29,8 +26,9 @@ type ParameterValue =
     | RadialChoice of string
     | MultiSelectChoices of string list
 
-/// All parameter values for a given robot (keyed by the shared ParameterId).
-type RobotParameters = Map<ParameterId, ParameterValue>
+type RobotParameters =
+    { Robot: RobotId
+      Parameters: Map<ParameterId, ParameterValue> }
 
 module Parameter =
     let defaultValue (def: ParameterDefinition) : ParameterValue =
@@ -42,19 +40,23 @@ module Parameter =
         | RadialSelection (_, defaultChoice) -> RadialChoice defaultChoice
         | MultiSelect (_, defaultChoices) -> MultiSelectChoices defaultChoices
 
-    /// Build a complete set of robot parameter values (guaranteed to contain every defined ParameterId).
-    let createForRobot (defs: ParameterDefinition list) : RobotParameters =
-        defs
-        |> List.map (fun d -> d.Id, defaultValue d)
-        |> Map.ofList
+    let createForRobot (robotId: RobotId) (defs: ParameterDefinition list) : RobotParameters =
+        let parameters =
+            defs
+            |> List.map (fun d -> d.Id, defaultValue d)
+            |> Map.ofList
+        
+        { Robot = robotId
+          Parameters = parameters }
 
     let private validateOne (def: ParameterDefinition) (value: ParameterValue) : string list =
-        let bad msg = [ $"Parameter '{def.Name}' ({def.Id}) invalid: {msg}" ]
-
+        let bad msg = [ $"Parameter '{def.Name}' invalid: {msg}" ]
+        
         match def.Spec, value with
         | Dropdown (options, _), DropdownChoice choice when List.contains choice options -> []
         | Dropdown (options, _), DropdownChoice choice ->
-            bad $"'{choice}' is not one of [{String.concat ", " options}]"
+            let joinWithCommas (xs: string list) = String.concat ", " xs
+            bad $"'{choice}' is not one of [{joinWithCommas options}]"
         | Dropdown _, _ ->
             bad "value type mismatch (expected DropdownChoice)"
 
@@ -70,27 +72,26 @@ module Parameter =
 
         | RadialSelection (options, _), RadialChoice choice when List.contains choice options -> []
         | RadialSelection (options, _), RadialChoice choice ->
-            bad $"'{choice}' is not one of [{String.concat ", " options}]"
+            let joinWithCommas (xs: string list) = String.concat ", " xs
+            bad $"'{choice}' is not one of [{joinWithCommas options}]"
         | RadialSelection _, _ ->
             bad "value type mismatch (expected RadialChoice)"
 
         | MultiSelect (options, _), MultiSelectChoices choices ->
             let invalid = choices |> List.filter (fun c -> not (List.contains c options))
+            let joinWithCommas (xs: string list) = String.concat ", " xs
             if List.isEmpty invalid then []
-            else bad $"contains invalid selections [{String.concat ", " invalid}]"
+            else bad $"contains invalid selections [{joinWithCommas invalid}]"
         | MultiSelect _, _ ->
             bad "value type mismatch (expected MultiSelectChoices)"
 
-    /// Ensures:
-    /// 1) every robot has a value for every defined ParameterId
-    /// 2) no values violate the definition constraints
-    let validateComplete
+    let validate
         (defs: ParameterDefinition list)
         (values: RobotParameters)
         : Result<RobotParameters, string list> =
 
         let defIds = defs |> List.map (fun d -> d.Id) |> Set.ofList
-        let valueIds = values |> Map.keys |> Set.ofSeq
+        let valueIds = values.Parameters |> Map.keys |> Set.ofSeq
 
         let missing =
             Set.difference defIds valueIds
@@ -100,7 +101,7 @@ module Parameter =
         let invalid =
             defs
             |> List.collect (fun def ->
-                match Map.tryFind def.Id values with
+                match Map.tryFind def.Id values.Parameters with
                 | None -> []
                 | Some v -> validateOne def v)
 
@@ -108,13 +109,14 @@ module Parameter =
         | [] -> Ok values
         | errs -> Error errs
 
-    /// Convenience: fill in any missing values from defaults, leaving existing values as-is.
-    /// Useful when new parameters are added after robots already have data.
     let withDefaultsFilled (defs: ParameterDefinition list) (values: RobotParameters) : RobotParameters =
-        defs
-        |> List.fold
-            (fun acc def ->
-                match Map.containsKey def.Id acc with
-                | true -> acc
-                | false -> Map.add def.Id (defaultValue def) acc)
-            values
+        let updatedParameters =
+            defs
+            |> List.fold
+                (fun acc def ->
+                    match Map.containsKey def.Id acc with
+                    | true -> acc
+                    | false -> Map.add def.Id (defaultValue def) acc)
+                values.Parameters
+        
+        { values with Parameters = updatedParameters }

@@ -13,5 +13,3 @@ type Game =
       PitResults: RobotId list
       Events: EventId list
       Parameters: ParameterDefinition list }
-    
-let create year name phases gamePieces infractions pitResults events parameters = { Year = year; Name = name; Phases = phases; GamePieces = gamePieces; Infractions = infractions; PitResults = pitResults; Events = events; Parameters = parameters }
