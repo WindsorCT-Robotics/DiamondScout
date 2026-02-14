@@ -5,7 +5,7 @@
 type TeamNumber =
     /// <summary>Creates a new <see cref="T:ParagonRobotics.DiamondScout.Common.Teams.TeamNumber"/> instance.</summary>
     /// <param name="teamNumber">The team number.</param>
-    | TeamNumber of teamNumber: int
+    | TeamNumber of teamNumber: uint
 
 /// A FIRST Robotics Competition team name.
 [<Struct>]
@@ -20,3 +20,5 @@ type Team =
       TeamNumber: TeamNumber
       /// The team's name.
       TeamName: TeamName }
+
+let create teamNumber teamName = { TeamNumber = teamNumber; TeamName = teamName }

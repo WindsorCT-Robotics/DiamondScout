@@ -5,3 +5,7 @@ open ParagonRobotics.DiamondScout.Common.Identifiers
 type Event =
     { Name: string
       Matches: MatchId list }
+
+let create name matches = { Name = name; Matches = matches }
+
+let add matchId (event: Event) = { event with Matches = matchId :: event.Matches }
