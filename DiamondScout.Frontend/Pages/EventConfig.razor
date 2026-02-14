@@ -1,6 +1,151 @@
 @page "/EventConfig"
-<h3>EventConfig</h3>
+@using ParagonRobotics.DiamondScout.Common
 
-@code {
-    
-}
+<h3>Event Configuration</h3>
+
+<div class="container">
+    <!-- Create Event Section -->
+    <div class="row">
+        <div class="col-12">
+            @if (currentEvent == null)
+            {
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Create New Event</h4>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="@newEventModel" OnValidSubmit="@CreateEvent">
+                            <div class="mb-3">
+                                <label for="eventName" class="form-label">Event Name:</label>
+                                <InputText id="eventName" class="form-control" @bind-Value="newEventModel.Name" />
+                            </div>
+                            <div class="mb-3">
+                                <label for="eventKey" class="form-label">FIRST Event Key (e.g., 2024week1):</label>
+                                <InputText id="eventKey" class="form-control" @bind-Value="newEventModel.EventKey" 
+                                          placeholder="Enter FIRST event key" />
+                            </div>
+                            <button type="submit" class="btn btn-primary">Create Event</button>
+                        </EditForm>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4>Current Event: @currentEvent.Name</h4>
+                            @if (!string.IsNullOrEmpty(currentEventKey))
+                            {
+                                <small class="text-muted">Event Key: @currentEventKey</small>
+                            }
+                        </div>
+                        <div>
+                            <button class="btn btn-success me-2" @onclick="LoadMatchesFromAPI" disabled="@isLoadingMatches">
+                                @if (isLoadingMatches)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                Load Matches from FIRST API
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="ResetEvent">Start New Event</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (currentEvent != null)
+    {
+        <!-- API Status -->
+        @if (!string.IsNullOrEmpty(apiStatusMessage))
+        {
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert @(apiStatusMessage.Contains("Error") ? "alert-danger" : "alert-info")">
+                        @apiStatusMessage
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Manual Match Addition (fallback) -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Manual Match Addition <small class="text-muted">(fallback if API unavailable)</small></h5>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="@newMatchModel" OnValidSubmit="@AddMatchManually">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="matchNumber" class="form-label">Match Number:</label>
+                                    <InputNumber id="matchNumber" class="form-control" @bind-Value="newMatchModel.MatchNumber" />
+                                </div>
+                                <div class="col-md-8 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-outline-primary">Add Match Manually</button>
+                                </div>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Display Event Matches -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4>Event Matches (@matches.Count total)</h4>
+                        @if (matches.Any())
+                        {
+                            <a href="/MatchScouting" class="btn btn-primary">
+                                Go to Match Scouting
+                            </a>
+                        }
+                    </div>
+                    <div class="card-body">
+                        @if (matches.Any())
+                        {
+                            <div class="row">
+                                @foreach (var match in matches.OrderBy(m => m.MatchNumber.Item))
+                                {
+                                    var matchNum = match.MatchNumber.Item;
+                                    var scoutedCount = match.MatchScoutResults.Count();
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Match @matchNum</h6>
+                                                <p class="card-text">
+                                                    <span class="badge @(scoutedCount > 0 ? "bg-success" : "bg-secondary")">
+                                                        @scoutedCount scouted
+                                                    </span>
+                                                </p>
+                                                @if (scoutedCount > 0)
+                                                {
+                                                    <small class="text-muted">
+                                                        Teams: @string.Join(", ", match.MatchScoutResults.Select(r => r.Team.TeamNumber.teamNumber))
+                                                    </small>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <p class="text-muted mb-3">No matches loaded yet.</p>
+                                <p class="small">Use the "Load Matches from FIRST API" button to automatically import matches for this event.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
