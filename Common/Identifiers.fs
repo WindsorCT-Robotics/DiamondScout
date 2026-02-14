@@ -28,7 +28,7 @@ type GamePieceId = GamePieceId of int
 type SubPhaseId = SubPhaseId of int
 
 [<Struct>]
-type ParameterId = ParameterId of int
+type ParameterDefinitionId = ParameterDefinitionId of int
 
 [<Struct>]
 type RobotParametersId = RobotParametersId of int

@@ -54,3 +54,5 @@ type MatchScoutResult =
 type Match = { MatchNumber: MatchNumber; MatchScoutResults: MatchScoutResult list }
 
 let createMatch matchNumber matchScoutResults = { MatchNumber = matchNumber; MatchScoutResults = matchScoutResults }
+
+let addMatchResult matchData matchScoutResult = { matchData with MatchScoutResults = matchScoutResult :: matchData.MatchScoutResults }

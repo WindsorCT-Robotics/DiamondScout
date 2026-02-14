@@ -12,4 +12,4 @@ type Game =
       Infractions: InfractionId list
       PitResults: RobotId list
       Events: EventId list
-      Parameters: ParameterDefinition list }
+      Parameters: ParameterDefinitionId list }

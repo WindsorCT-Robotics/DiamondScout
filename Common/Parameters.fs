@@ -6,6 +6,10 @@ type NumericSpinnerType =
     | IntegralSpinner of int
     | DecimalSpinner of double
 
+type IsActive = 
+    | Active of bool
+    | Inactive of bool
+    
 type ParameterSpec =
     | Dropdown of options: string list * defaultChoice: string
     | TextBox of defaultText: string
@@ -14,9 +18,9 @@ type ParameterSpec =
     | MultiSelect of options: string list * defaultChoices: string list
 
 type ParameterDefinition =
-    { Id: ParameterId
-      Name: string
-      Spec: ParameterSpec }
+    { Name: string
+      Spec: ParameterSpec
+      Active: IsActive }
 
 type ParameterValue =
     | DropdownChoice of string
@@ -28,7 +32,7 @@ type ParameterValue =
 
 type RobotParameters =
     { Robot: RobotId
-      Parameters: Map<ParameterId, ParameterValue> }
+      Parameters: Map<ParameterDefinitionId, ParameterValue> }
 
 module Parameter =
     let defaultValue (def: ParameterDefinition) : ParameterValue =
@@ -40,18 +44,18 @@ module Parameter =
         | RadialSelection (_, defaultChoice) -> RadialChoice defaultChoice
         | MultiSelect (_, defaultChoices) -> MultiSelectChoices defaultChoices
 
-    let createForRobot (robotId: RobotId) (defs: ParameterDefinition list) : RobotParameters =
+    let createForRobot (robotId: RobotId) (defs: (ParameterDefinitionId * ParameterDefinition) list) : RobotParameters =
         let parameters =
             defs
-            |> List.map (fun d -> d.Id, defaultValue d)
+            |> List.map (fun (id, d) -> id, defaultValue d)
             |> Map.ofList
-        
+    
         { Robot = robotId
           Parameters = parameters }
 
     let private validateOne (def: ParameterDefinition) (value: ParameterValue) : string list =
         let bad msg = [ $"Parameter '{def.Name}' invalid: {msg}" ]
-        
+    
         match def.Spec, value with
         | Dropdown (options, _), DropdownChoice choice when List.contains choice options -> []
         | Dropdown (options, _), DropdownChoice choice ->
@@ -86,11 +90,11 @@ module Parameter =
             bad "value type mismatch (expected MultiSelectChoices)"
 
     let validate
-        (defs: ParameterDefinition list)
+        (defs: (ParameterDefinitionId * ParameterDefinition) list)
         (values: RobotParameters)
         : Result<RobotParameters, string list> =
 
-        let defIds = defs |> List.map (fun d -> d.Id) |> Set.ofList
+        let defIds = defs |> List.map fst |> Set.ofList
         let valueIds = values.Parameters |> Map.keys |> Set.ofSeq
 
         let missing =
@@ -100,8 +104,8 @@ module Parameter =
 
         let invalid =
             defs
-            |> List.collect (fun def ->
-                match Map.tryFind def.Id values.Parameters with
+            |> List.collect (fun (id, def) ->
+                match Map.tryFind id values.Parameters with
                 | None -> []
                 | Some v -> validateOne def v)
 
@@ -109,14 +113,14 @@ module Parameter =
         | [] -> Ok values
         | errs -> Error errs
 
-    let withDefaultsFilled (defs: ParameterDefinition list) (values: RobotParameters) : RobotParameters =
+    let withDefaultsFilled (defs: (ParameterDefinitionId * ParameterDefinition) list) (values: RobotParameters) : RobotParameters =
         let updatedParameters =
             defs
             |> List.fold
-                (fun acc def ->
-                    match Map.containsKey def.Id acc with
+                (fun acc (id, def) ->
+                    match Map.containsKey id acc with
                     | true -> acc
-                    | false -> Map.add def.Id (defaultValue def) acc)
+                    | false -> Map.add id (defaultValue def) acc)
                 values.Parameters
-        
+    
         { values with Parameters = updatedParameters }
