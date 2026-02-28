@@ -1,8 +1,4 @@
-﻿module ParagonRobotics.DiamondScout.Common.RobotData
-
-open ParagonRobotics.DiamondScout.Common.Identifiers
-open ParagonRobotics.DiamondScout.Common.Scoring
-open ParagonRobotics.DiamondScout.Common.Teams
+﻿namespace ParagonRobotics.DiamondScout.Common
 
 [<Struct>]
 type Drivetrain =
@@ -25,9 +21,14 @@ type EndgameCapable =
 
 type Robot =
     { Name: string
-      Team: Team
+      Team: TeamId
       Game: GameId
       EndgameCapable: EndgameCapable
       Drivetrain: Drivetrain }
 
-let create name team game scoringTier drivetrain = { Name = name; Team = team; Game = game; EndgameCapable = TierCapability scoringTier; Drivetrain = drivetrain }
+module Robot =
+    let create name team game scoringTier drivetrain = { Name = name; Team = team; Game = game; EndgameCapable = TierCapability scoringTier; Drivetrain = drivetrain }
+    let associateTeam robot team = { robot with Team = team }
+    let associateGame robot game = { robot with Game = game }
+    let setEndgameCapabilities robot endgameCapability = { robot with EndgameCapable = endgameCapability }
+    let setDrivetrain robot drivetrain = { robot with Drivetrain = drivetrain }

@@ -1,6 +1,4 @@
-module ParagonRobotics.DiamondScout.Common.Parameters
-
-open ParagonRobotics.DiamondScout.Common.Identifiers
+namespace ParagonRobotics.DiamondScout.Common
 
 type NumericSpinnerType =
     | IntegralSpinner of int

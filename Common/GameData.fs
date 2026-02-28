@@ -1,8 +1,6 @@
-module ParagonRobotics.DiamondScout.Common.GameData
+namespace ParagonRobotics.DiamondScout.Common
 
 open System
-open ParagonRobotics.DiamondScout.Common.Identifiers
-open ParagonRobotics.DiamondScout.Common.Parameters
 
 type Game =
     { Year: DateOnly

@@ -1,11 +1,9 @@
-module ParagonRobotics.DiamondScout.Common.Events
-
-open ParagonRobotics.DiamondScout.Common.Identifiers
+namespace ParagonRobotics.DiamondScout.Common
 
 type Event =
     { Name: string
       Matches: MatchId list }
 
-let create name matches = { Name = name; Matches = matches }
-
-let add matchId (event: Event) = { event with Matches = matchId :: event.Matches }
+module Event =
+    let create name matches = { Name = name; Matches = matches }
+    let add matchId (event: Event) = { event with Matches = matchId :: event.Matches }
