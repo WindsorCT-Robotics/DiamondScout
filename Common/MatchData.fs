@@ -49,7 +49,8 @@ type MatchScoutResult =
       Breakdowns: Breakdown list
       Infractions: InfractionId list
       GamePoints: Points option
-      RankingPoints: RankingPoints option }
+      RankingPoints: RankingPoints option
+      Notes: Note list }
 
 type Match =
     { MatchNumber: MatchNumber
@@ -72,7 +73,8 @@ module Match =
           Breakdowns = []
           Infractions = []
           GamePoints = None
-          RankingPoints = None }
+          RankingPoints = None
+          Notes = [] }
 
     let addMatchResult matchScoutResult matchData =
         { matchData with
@@ -142,3 +144,5 @@ module Match =
         { matchData with
             GamePoints = Some totalGamePoints
             RankingPoints = Some totalRankingPoints }
+
+    let addNote note matchData = { matchData with MatchScoutResult.Notes = note :: matchData.Notes }

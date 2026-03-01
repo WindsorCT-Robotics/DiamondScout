@@ -14,6 +14,7 @@
   <ItemGroup>
     <Compile Include="Identifiers.fs" />
     <Compile Include="User.fs" />
+    <Compile Include="Note.fs" />
     <Compile Include="Teams.fs" />
     <Compile Include="Scoring.fs" />
     <Compile Include="Ranking.fs" />
