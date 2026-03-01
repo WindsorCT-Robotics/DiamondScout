@@ -1,13 +1,14 @@
-module ParagonRobotics.DiamondScout.Common.Scoring
+namespace ParagonRobotics.DiamondScout.Common
 
 /// Defines a scoring tier.
 [<Struct>]
-type ScoringTier = {
-    /// The name of the scoring tier.
-    Name: string
-    /// The level of the scoring tier.
-    Level: uint
-}
+type ScoringTier =
+    {
+        /// The name of the scoring tier.
+        Name: string
+        /// The level of the scoring tier.
+        Level: uint
+    }
 
 /// <summary>The number of points a <see cref="T:ParagonRobotics.DiamondScout.Common.Scoring.Score"/> is worth.</summary>
 [<Struct>]
@@ -17,14 +18,33 @@ type Points =
     /// </summary>
     /// <param name="points">The number of points.</param>
     | Points of points: uint
+
     /// Represents zero points.
     static member Zero = Points 0u
+    static member (+)(Points left, Points right) = left + right |> Points
 
-///<summary>
-/// Represents completing a game's objective and the value of the objective in <see cref="T:ParagonRobotics.DiamondScout.Common.Scoring.Points"/>.
-/// </summary>
+/// A serializable/config-friendly representation of a score.
+type ScoreValue =
+    | Flat of Points
+    | ByTier of Map<ScoringTier, Points>
+
+/// A scoring value that can be evaluated given a ScoringTier.
 type Score =
-    /// A score that is not tiered.
-    | FlatScore of points: Points
-    /// <summary>A score that rewards points relative to a <see cref="T:ParagonRobotics.DiamondScout.Common.Scoring.ScoringTier"/>.</summary>
-    | TieredScore of Map<ScoringTier, Points>
+    private
+    | Score of (ScoringTier -> Points)
+
+module Score =
+    let getPoints tier (Score score) : Points =
+        score tier
+
+    let compile (rule: ScoreValue) : Score =
+        match rule with
+        | Flat points ->
+            Score(fun _tier -> points)
+
+        | ByTier tiers ->
+            Score(fun tier ->
+                match Map.tryFind tier tiers with
+                | Some pts -> pts
+                | None ->
+                    invalidArg (nameof tier) $"Tier '{tier.Name}' (Level {tier.Level}) was not defined for this score.")

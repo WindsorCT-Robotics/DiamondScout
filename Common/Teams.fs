@@ -1,4 +1,4 @@
-﻿module ParagonRobotics.DiamondScout.Common.Teams
+﻿namespace ParagonRobotics.DiamondScout.Common
 
 /// A FIRST Robotics Competition team number.
 [<Struct>]
@@ -19,6 +19,11 @@ type Team =
     { /// The team's number.
       TeamNumber: TeamNumber
       /// The team's name.
-      TeamName: TeamName }
+      TeamName: TeamName
+      /// Notes about the team.
+      Notes: Note list }
 
-let create teamNumber teamName = { TeamNumber = teamNumber; TeamName = teamName }
+module Team =
+    let create teamNumber teamName = { TeamNumber = teamNumber; TeamName = teamName; Notes = [] }
+    let changeName team teamName = { team with TeamName = teamName }
+    let addNote team note = { team with Notes = note :: team.Notes }

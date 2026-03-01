@@ -1,12 +1,16 @@
-module ParagonRobotics.DiamondScout.Common.GamePieces
-
-open ParagonRobotics.DiamondScout.Common.Phase
-open ParagonRobotics.DiamondScout.Common.Ranking
-open ParagonRobotics.DiamondScout.Common.Scoring
+namespace ParagonRobotics.DiamondScout.Common
 
 type GamePiece =
     { Name: string
-      Value: SubPhaseMap<Score option>
+      PhaseScore: SubPhaseMap<ScoreValue>
       RankPoints: RankingPointGrant list }
 
-let create name value rankPoints = { Name = name; Value = value; RankPoints = rankPoints }
+module GamePiece =
+    let create name values rankPoints =
+        { Name = name
+          PhaseScore = values
+          RankPoints = rankPoints }
+
+    let changeName piece name = { piece with GamePiece.Name = name }
+    let changeValue piece value = { piece with GamePiece.PhaseScore = value }
+    let changeRankPoints piece rp = { piece with RankPoints = rp }

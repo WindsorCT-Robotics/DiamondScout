@@ -1,6 +1,4 @@
-module ParagonRobotics.DiamondScout.Common.Ranking
-
-open ParagonRobotics.DiamondScout.Common.Scoring
+namespace ParagonRobotics.DiamondScout.Common
 
 /// Represents FIRST Robotics Competition ranking points.
 [<Struct>]
@@ -10,6 +8,7 @@ type RankingPoints =
     | RankingPoints of rankingPoints: uint
     /// Represents zero ranking points.
     static member Zero = RankingPoints 0u
+    static member (+) (RankingPoints left, RankingPoints right) = left + right |> RankingPoints
 
 /// The requirements for a team to receive ranking points.
 type RankingPointsThreshold =
@@ -24,3 +23,6 @@ type RankingPointGrant =
       Value: RankingPoints
       /// <summary>The <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/> criteria.</summary>
       Threshold: RankingPointsThreshold }
+
+module Ranking =
+   let create value threshold = { Value = value; Threshold = threshold }
