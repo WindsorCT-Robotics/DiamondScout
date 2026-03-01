@@ -35,11 +35,10 @@ type Breakdown =
     | Emergency
     | Malfunction
 
-type ScoreRecord = {
-    GamePiece: GamePiece
-    Tier: ScoringTier
-    Phase: SubPhaseId
-}
+type ScoreRecord =
+    { GamePiece: GamePiece
+      Tier: ScoringTier
+      Phase: SubPhaseId }
 
 type MatchScoutResult =
     { Team: Team
@@ -79,11 +78,16 @@ module Match =
     let addMatchResult matchScoutResult matchData =
         { matchData with
             MatchScoutResults = matchScoutResult :: matchData.MatchScoutResults }
-        
+
     let setWinner winner matchData = { matchData with Winner = Some winner }
 
     let score phase gamePiece tier matchData =
-        { matchData with Scores = { GamePiece = gamePiece; Tier = tier; Phase = phase } :: matchData.Scores }
+        { matchData with
+            Scores =
+                { GamePiece = gamePiece
+                  Tier = tier
+                  Phase = phase }
+                :: matchData.Scores }
 
     let breakdown breakdownData matchData =
         { matchData with
@@ -98,10 +102,7 @@ module Match =
             Endgame.Result = endgameData }
 
     let tally victoryReward winningAlliance (matchData: MatchScoutResult) : MatchScoutResult =
-        let gamePieceScores =
-            matchData.Scores
-            |> List.groupBy _.GamePiece
-            |> Map.ofList
+        let gamePieceScores = matchData.Scores |> List.groupBy _.GamePiece |> Map.ofList
 
         let gamePiecePoints =
             gamePieceScores
@@ -111,13 +112,13 @@ module Match =
                     gamePiece.PhaseScore
                     |> Map.tryFind scoreRecord.Phase
                     |> function
-                        | None -> invalidOp $"Could not find score value for Phase {scoreRecord.Phase} for GamePiece {gamePiece}."
-                        | Some scoreValue ->
-                            Score.compile >> Score.getPoints scoreRecord.Tier
-                            <| scoreValue))
+                        | None ->
+                            invalidOp
+                                $"Could not find score value for Phase {scoreRecord.Phase} for GamePiece {gamePiece}."
+                        | Some scoreValue -> Score.compile >> Score.getPoints scoreRecord.Tier <| scoreValue))
 
         let totalGamePoints = gamePiecePoints.Values |> Seq.sum
-        
+
         let victoryRankingPoints =
             match matchData.Alliance = winningAlliance with
             | true -> victoryReward
@@ -145,4 +146,6 @@ module Match =
             GamePoints = Some totalGamePoints
             RankingPoints = Some totalRankingPoints }
 
-    let addNote note matchData = { matchData with MatchScoutResult.Notes = note :: matchData.Notes }
+    let addNote note matchData =
+        { matchData with
+            MatchScoutResult.Notes = note :: matchData.Notes }

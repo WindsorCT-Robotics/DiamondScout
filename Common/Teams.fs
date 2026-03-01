@@ -16,14 +16,22 @@ type TeamName =
 
 /// A FIRST Robotics Competition team.
 type Team =
-    { /// The team's number.
-      TeamNumber: TeamNumber
-      /// The team's name.
-      TeamName: TeamName
-      /// Notes about the team.
-      Notes: Note list }
+    {
+        /// The team's number.
+        TeamNumber: TeamNumber
+        /// The team's name.
+        TeamName: TeamName
+        /// Notes about the team.
+        Notes: Note list
+    }
 
 module Team =
-    let create teamNumber teamName = { TeamNumber = teamNumber; TeamName = teamName; Notes = [] }
+    let create teamNumber teamName =
+        { TeamNumber = teamNumber
+          TeamName = teamName
+          Notes = [] }
+
     let changeName team teamName = { team with TeamName = teamName }
-    let addNote team note = { team with Notes = note :: team.Notes }
+
+    let addNote team note =
+        { team with Notes = note :: team.Notes }

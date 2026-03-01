@@ -5,10 +5,7 @@ type Role =
     | Viewer
     | Scouter
 
-type User = {
-    Name: string
-    Role: Role
-}
+type User = { Name: string; Role: Role }
 
 module User =
     let isAdmin user = user.Role = Admin

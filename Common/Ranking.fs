@@ -6,9 +6,10 @@ type RankingPoints =
     /// <summary>Creates a <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPoints"/> value.</summary>
     /// <param name="rankingPoints">The number of ranking points.</param>
     | RankingPoints of rankingPoints: uint
+
     /// Represents zero ranking points.
     static member Zero = RankingPoints 0u
-    static member (+) (RankingPoints left, RankingPoints right) = left + right |> RankingPoints
+    static member (+)(RankingPoints left, RankingPoints right) = left + right |> RankingPoints
 
 /// The requirements for a team to receive ranking points.
 type RankingPointsThreshold =
@@ -19,10 +20,13 @@ type RankingPointsThreshold =
 
 /// The number of <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPoints"/> a team receives for meeting the specified <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/>.
 type RankingPointGrant =
-    { /// <summary>The number of <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPoints"/> granted when meeting the <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/> criteria.</summary>
-      Value: RankingPoints
-      /// <summary>The <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/> criteria.</summary>
-      Threshold: RankingPointsThreshold }
+    {
+        /// <summary>The number of <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPoints"/> granted when meeting the <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/> criteria.</summary>
+        Value: RankingPoints
+        /// <summary>The <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/> criteria.</summary>
+        Threshold: RankingPointsThreshold
+    }
 
 module Ranking =
-   let create value threshold = { Value = value; Threshold = threshold }
+    let create value threshold =
+        { Value = value; Threshold = threshold }

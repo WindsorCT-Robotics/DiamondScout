@@ -12,5 +12,9 @@ module GamePiece =
           RankPoints = rankPoints }
 
     let changeName piece name = { piece with GamePiece.Name = name }
-    let changeValue piece value = { piece with GamePiece.PhaseScore = value }
+
+    let changeValue piece value =
+        { piece with
+            GamePiece.PhaseScore = value }
+
     let changeRankPoints piece rp = { piece with RankPoints = rp }

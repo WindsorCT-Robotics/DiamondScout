@@ -4,10 +4,10 @@ type NumericSpinnerType =
     | IntegralSpinner of int
     | DecimalSpinner of double
 
-type IsActive = 
+type IsActive =
     | Active of bool
     | Inactive of bool
-    
+
 type ParameterSpec =
     | Dropdown of options: string list * defaultChoice: string
     | TextBox of defaultText: string
@@ -35,57 +35,53 @@ type RobotParameters =
 module Parameter =
     let defaultValue (def: ParameterDefinition) : ParameterValue =
         match def.Spec with
-        | Dropdown (_, defaultChoice) -> DropdownChoice defaultChoice
+        | Dropdown(_, defaultChoice) -> DropdownChoice defaultChoice
         | TextBox defaultText -> Text defaultText
-        | NumericSpinner (IntegralSpinner defaultInt) -> Integral defaultInt
-        | NumericSpinner (DecimalSpinner defaultDouble) -> Decimal defaultDouble
-        | RadialSelection (_, defaultChoice) -> RadialChoice defaultChoice
-        | MultiSelect (_, defaultChoices) -> MultiSelectChoices defaultChoices
+        | NumericSpinner(IntegralSpinner defaultInt) -> Integral defaultInt
+        | NumericSpinner(DecimalSpinner defaultDouble) -> Decimal defaultDouble
+        | RadialSelection(_, defaultChoice) -> RadialChoice defaultChoice
+        | MultiSelect(_, defaultChoices) -> MultiSelectChoices defaultChoices
 
     let createForRobot (robotId: RobotId) (defs: (ParameterDefinitionId * ParameterDefinition) list) : RobotParameters =
-        let parameters =
-            defs
-            |> List.map (fun (id, d) -> id, defaultValue d)
-            |> Map.ofList
-    
+        let parameters = defs |> List.map (fun (id, d) -> id, defaultValue d) |> Map.ofList
+
         { Robot = robotId
           Parameters = parameters }
 
     let private validateOne (def: ParameterDefinition) (value: ParameterValue) : string list =
-        let bad msg = [ $"Parameter '{def.Name}' invalid: {msg}" ]
-    
+        let bad msg =
+            [ $"Parameter '{def.Name}' invalid: {msg}" ]
+
         match def.Spec, value with
-        | Dropdown (options, _), DropdownChoice choice when List.contains choice options -> []
-        | Dropdown (options, _), DropdownChoice choice ->
+        | Dropdown(options, _), DropdownChoice choice when List.contains choice options -> []
+        | Dropdown(options, _), DropdownChoice choice ->
             let joinWithCommas (xs: string list) = String.concat ", " xs
             bad $"'{choice}' is not one of [{joinWithCommas options}]"
-        | Dropdown _, _ ->
-            bad "value type mismatch (expected DropdownChoice)"
+        | Dropdown _, _ -> bad "value type mismatch (expected DropdownChoice)"
 
         | TextBox _, Text _ -> []
 
-        | TextBox _, _ ->
-            bad "value type mismatch (expected Text)"
+        | TextBox _, _ -> bad "value type mismatch (expected Text)"
 
-        | NumericSpinner (IntegralSpinner _), Integral _ -> []
-        | NumericSpinner (DecimalSpinner _), Decimal _ -> []
-        | NumericSpinner _, _ ->
-            bad "value type mismatch (expected Integral or Decimal to match spinner type)"
+        | NumericSpinner(IntegralSpinner _), Integral _ -> []
+        | NumericSpinner(DecimalSpinner _), Decimal _ -> []
+        | NumericSpinner _, _ -> bad "value type mismatch (expected Integral or Decimal to match spinner type)"
 
-        | RadialSelection (options, _), RadialChoice choice when List.contains choice options -> []
-        | RadialSelection (options, _), RadialChoice choice ->
+        | RadialSelection(options, _), RadialChoice choice when List.contains choice options -> []
+        | RadialSelection(options, _), RadialChoice choice ->
             let joinWithCommas (xs: string list) = String.concat ", " xs
             bad $"'{choice}' is not one of [{joinWithCommas options}]"
-        | RadialSelection _, _ ->
-            bad "value type mismatch (expected RadialChoice)"
+        | RadialSelection _, _ -> bad "value type mismatch (expected RadialChoice)"
 
-        | MultiSelect (options, _), MultiSelectChoices choices ->
+        | MultiSelect(options, _), MultiSelectChoices choices ->
             let invalid = choices |> List.filter (fun c -> not (List.contains c options))
             let joinWithCommas (xs: string list) = String.concat ", " xs
-            if List.isEmpty invalid then []
-            else bad $"contains invalid selections [{joinWithCommas invalid}]"
-        | MultiSelect _, _ ->
-            bad "value type mismatch (expected MultiSelectChoices)"
+
+            if List.isEmpty invalid then
+                []
+            else
+                bad $"contains invalid selections [{joinWithCommas invalid}]"
+        | MultiSelect _, _ -> bad "value type mismatch (expected MultiSelectChoices)"
 
     let validate
         (defs: (ParameterDefinitionId * ParameterDefinition) list)
@@ -111,7 +107,10 @@ module Parameter =
         | [] -> Ok values
         | errs -> Error errs
 
-    let withDefaultsFilled (defs: (ParameterDefinitionId * ParameterDefinition) list) (values: RobotParameters) : RobotParameters =
+    let withDefaultsFilled
+        (defs: (ParameterDefinitionId * ParameterDefinition) list)
+        (values: RobotParameters)
+        : RobotParameters =
         let updatedParameters =
             defs
             |> List.fold
@@ -120,5 +119,6 @@ module Parameter =
                     | true -> acc
                     | false -> Map.add id (defaultValue def) acc)
                 values.Parameters
-    
-        { values with Parameters = updatedParameters }
+
+        { values with
+            Parameters = updatedParameters }
