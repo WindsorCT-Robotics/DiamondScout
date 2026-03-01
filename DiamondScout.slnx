@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="Common/Common.fsproj" />
-  <Project Path="src/DiamondScout.Web/DiamondScout.Web.csproj" />
+  <Project Path="DiamondScout.WebApp.Shared/DiamondScout.WebApp.Shared.csproj" />
+  <Project Path="DiamondScout.WebApp/DiamondScout.WebApp.csproj" />
 </Solution>
