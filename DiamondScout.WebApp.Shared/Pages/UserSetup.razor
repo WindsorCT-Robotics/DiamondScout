@@ -1,0 +1,26 @@
+﻿@page "/setup"
+@using ParagonRobotics.DiamondScout.Common
+
+<h3>Tablet Setup</h3>
+
+<div class="container">
+
+    <div class="mb-3">
+        <label>Scouter Name</label>
+        <input class="form-control" @bind="Name" />
+    </div>
+
+    <div class="mb-3">
+        <label>Role</label>
+        <select class="form-select" @bind="SelectedRole">
+            <option value="Scouter">Scouter</option>
+            <option value="Admin">Admin</option>
+            <option value="Viewer">Viewer</option>
+        </select>
+    </div>
+
+    <button class="btn btn-primary" @onclick="InitializeTablet">
+        Initialize Tablet
+    </button>
+
+</div>
