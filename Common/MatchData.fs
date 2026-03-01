@@ -77,6 +77,8 @@ module Match =
     let addMatchResult matchScoutResult matchData =
         { matchData with
             MatchScoutResults = matchScoutResult :: matchData.MatchScoutResults }
+        
+    let setWinner winner matchData = { matchData with Winner = Some winner }
 
     let score phase gamePiece tier matchData =
         { matchData with Scores = { GamePiece = gamePiece; Tier = tier; Phase = phase } :: matchData.Scores }
@@ -93,31 +95,32 @@ module Match =
         { matchData with
             Endgame.Result = endgameData }
 
-    let tally (matchData: MatchScoutResult) : MatchScoutResult =
+    let tally victoryReward winningAlliance (matchData: MatchScoutResult) : MatchScoutResult =
         let gamePieceScores =
-            // Calculate score values for each game piece
             matchData.Scores
             |> List.groupBy _.GamePiece
             |> Map.ofList
 
-
-        // Calculate total game points from all score records
         let gamePiecePoints =
             gamePieceScores
             |> Map.map (fun gamePiece scores ->
                 scores
                 |> List.sumBy (fun scoreRecord ->
-                    gamePiece.Value
-                    |> Map.find scoreRecord.Phase
+                    gamePiece.PhaseScore
+                    |> Map.tryFind scoreRecord.Phase
                     |> function
-                        | None -> Points.Zero
+                        | None -> invalidOp $"Could not find score value for Phase {scoreRecord.Phase} for GamePiece {gamePiece}."
                         | Some scoreValue ->
                             Score.compile >> Score.getPoints scoreRecord.Tier
                             <| scoreValue))
 
         let totalGamePoints = gamePiecePoints.Values |> Seq.sum
+        
+        let victoryRankingPoints =
+            match matchData.Alliance = winningAlliance with
+            | true -> victoryReward
+            | false -> RankingPoints.Zero
 
-        // Calculate ranking points based on thresholds
         let totalRankingPoints =
             gamePieceScores
             |> Map.map (fun gamePiece scores ->
@@ -125,7 +128,7 @@ module Match =
                 |> List.sumBy (fun grant ->
                     match grant.Threshold with
                     | PointsThreshold points ->
-                        match gamePiecePoints.[gamePiece] >= points with
+                        match gamePiecePoints[gamePiece] >= points with
                         | true -> grant.Value
                         | false -> RankingPoints.Zero
                     | ScoreThreshold score ->
@@ -134,6 +137,7 @@ module Match =
                         | false -> RankingPoints.Zero))
             |> Map.values
             |> Seq.sum
+            |> (+) victoryRankingPoints
 
         { matchData with
             GamePoints = Some totalGamePoints
