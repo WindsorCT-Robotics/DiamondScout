@@ -10,6 +10,13 @@ type ScoringTier =
         Level: uint
     }
 
+type QualitativeScoring =
+    | Poor
+    | BelowAverage
+    | Average
+    | AboveAverage
+    | Excellent
+    
 /// <summary>The number of points a <see cref="T:ParagonRobotics.DiamondScout.Common.Scoring.Score"/> is worth.</summary>
 [<Struct>]
 type Points =
@@ -27,6 +34,7 @@ type Points =
 type ScoreValue =
     | Flat of Points
     | ByTier of Map<ScoringTier, Points>
+    | Qualitative of QualitativeScoring
 
 /// A scoring value that can be evaluated given a ScoringTier.
 type Score =
@@ -48,3 +56,12 @@ module Score =
                 | Some pts -> pts
                 | None ->
                     invalidArg (nameof tier) $"Tier '{tier.Name}' (Level {tier.Level}) was not defined for this score.")
+        
+        | Qualitative qualitative ->
+            Score(fun _tier ->
+                match qualitative with
+                | Poor -> Points 1u
+                | BelowAverage -> Points 2u
+                | Average -> Points 3u
+                | AboveAverage -> Points 4u
+                | Excellent -> Points 5u)
