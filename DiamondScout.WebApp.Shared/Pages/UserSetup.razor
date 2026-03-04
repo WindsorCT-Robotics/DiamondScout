@@ -1,4 +1,4 @@
-﻿@page "/setup"
+﻿@page "/usersetup"
 @using ParagonRobotics.DiamondScout.Common
 
 <h3>Tablet Setup</h3>
@@ -20,7 +20,22 @@
     </div>
 
     <button class="btn btn-primary" @onclick="InitializeTablet">
-        Initialize Tablet
+        Initialize
     </button>
 
+    <div class="reset-modal">
+        <h3>Reset User Data</h3>
+
+        <input type="password"
+               @bind="ResetPassword"
+               placeholder="Enter admin password"/>
+
+        <button @onclick="ConfirmResetPassword">Confirm Reset</button>
+        <button @onclick="() => ShowResetPasswordPrompt = false">Cancel</button>
+
+        @if (!string.IsNullOrEmpty(ResetError))
+        {
+            <p style="color:red">@ResetError</p>
+        }
+    </div>
 </div>

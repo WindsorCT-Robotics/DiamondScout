@@ -13,6 +13,10 @@ public partial class UserSetup
     protected string Name = "";
     protected string SelectedRole = "Scouter";
 
+    protected bool ShowResetPasswordPrompt = false;
+    protected string ResetPassword = "";
+    protected string? ResetError;
+    
     protected async Task InitializeTablet()
     {
         var userId = UserId.NewUserId(Guid.NewGuid());
@@ -28,7 +32,7 @@ public partial class UserSetup
 
         var payload = new
         {
-            UserId = userId,
+            UserId = userId.Item.ToString(),
             Name = user.Name,
             Role = user.Role.ToString()
         };
@@ -39,5 +43,28 @@ public partial class UserSetup
             JsonSerializer.Serialize(payload));
 
         Nav.NavigateTo("/");
+    }
+
+    protected async Task ResetUserData()
+    {
+        ShowResetPasswordPrompt = true;
+    }
+    
+    protected async Task ConfirmResetPassword()
+    {
+        const string CorrectPassword = "0571"; // move to config later
+
+        if (ResetPassword != CorrectPassword)
+        {
+            ResetError = "Incorrect password.";
+            return;
+        }
+
+        ResetError = null;
+        ShowResetPasswordPrompt = false;
+
+        await JS.InvokeVoidAsync("localStorage.removeItem", "diamondscout_user");
+
+        Nav.NavigateTo("/usersetup", forceLoad: true);
     }
 }

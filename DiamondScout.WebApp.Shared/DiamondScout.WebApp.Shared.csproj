@@ -16,12 +16,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Pages\" />
+    <AdditionalFiles Include="Layout\MainLayout.razor" />
+    <AdditionalFiles Include="Layout\NavMenu.razor" />
   </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="Layout\MainLayout.razor" />
-    <AdditionalFiles Include="Layout\NavMenu.razor" />
+    <ProjectReference Include="..\Common\Common.fsproj" />
   </ItemGroup>
 
 </Project>

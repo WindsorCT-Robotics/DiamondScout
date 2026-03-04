@@ -1,4 +1,7 @@
-﻿<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+﻿<Router AppAssembly="@typeof(App).Assembly"
+        NotFoundPage="typeof(Pages.NotFound)"
+        AdditionalAssemblies = "new[] { typeof(DiamondScout.WebApp.Shared.Pages.Home).Assembly }"
+        >
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
