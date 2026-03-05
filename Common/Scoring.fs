@@ -29,6 +29,7 @@ type Points =
     /// Represents zero points.
     static member Zero = Points 0u
     static member (+)(Points left, Points right) = left + right |> Points
+    static member (-)(Points left, Points right) = left - right |> Points
 
 /// A serializable/config-friendly representation of a score.
 type ScoreValue =
@@ -37,7 +38,7 @@ type ScoreValue =
     | Qualitative of QualitativeScoring
 
 /// A scoring value that can be evaluated given a ScoringTier.
-type Score = private Score of (ScoringTier -> Points)
+type Score = private Score of (ScoringTier option -> Points)
 
 module Score =
     let getPoints tier (Score score) : Points = score tier
@@ -47,11 +48,14 @@ module Score =
         | Flat points -> Score(fun _tier -> points)
 
         | ByTier tiers ->
-            Score(fun tier ->
-                match Map.tryFind tier tiers with
-                | Some pts -> pts
-                | None ->
-                    invalidArg (nameof tier) $"Tier '{tier.Name}' (Level {tier.Level}) was not defined for this score.")
+            Score(fun maybeTier ->
+                match maybeTier with
+                | Some tier ->
+                    match Map.tryFind tier tiers with
+                    | Some pts -> pts
+                    | None ->
+                        invalidArg (nameof tier) $"Tier '{tier.Name}' (Level {tier.Level}) was not defined for this score."
+                | None -> invalidOp "No tier was provided.")
 
         | Qualitative qualitative ->
             Score(fun _tier ->

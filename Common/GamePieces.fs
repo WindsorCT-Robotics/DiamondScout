@@ -1,9 +1,21 @@
 namespace ParagonRobotics.DiamondScout.Common
 
+open System.Collections.Generic
+
 type GamePiece =
     { Name: string
       PhaseScore: SubPhaseMap<ScoreValue>
       RankPoints: RankingPointGrant list }
+    static member Create name (values: IDictionary<SubPhaseId, ScoreValue>) rankPoints =
+        { Name = name
+          PhaseScore =
+              match values with
+              | :? Map<SubPhaseId, ScoreValue> as m -> m
+              | d -> d |> Seq.map (|KeyValue|) |> Map.ofSeq
+          RankPoints = rankPoints }
+    member this.ChangeName name = { this with Name = name }
+    member this.ChangeValue value = { this with PhaseScore = value }
+    member this.ChangeRankPoints rp = { this with RankPoints = rp }
 
 module GamePiece =
     let create name values rankPoints =

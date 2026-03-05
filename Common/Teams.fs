@@ -24,6 +24,9 @@ type Team =
         /// Notes about the team.
         Notes: Note list
     }
+    static member Create teamNumber teamName = { TeamNumber = teamNumber; TeamName = teamName; Notes = [] }
+    member this.ChangeName teamName = { this with TeamName = teamName }
+    member this.AddNote note = { this with Notes = note :: this.Notes }
 
 module Team =
     let create teamNumber teamName =

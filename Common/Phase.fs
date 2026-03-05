@@ -1,14 +1,25 @@
 namespace ParagonRobotics.DiamondScout.Common
 
+open System
+
 type Phase =
     | Autonomous
     | Teleop
     | Endgame
+    member this.Match (autonomousAction: Action, teleopAction: Action, endgameAction: Action) =
+        match this with
+        | Autonomous -> autonomousAction.Invoke()
+        | Teleop -> teleopAction.Invoke()
+        | Endgame -> endgameAction.Invoke()
 
 type SubPhase =
     { Name: string
       Description: string
       Phase: Phase }
+    static member Create phase desc name = { Name = name; Description = desc; Phase = phase }
+    member this.ChangeName name = { this with Name = name }
+    member this.ChangeDescription desc = { this with Description = desc }
+    member this.ChangePhase phase = { this with Phase = phase }
 
 type SubPhaseMap<'T> = Map<SubPhaseId, 'T>
 

@@ -26,6 +26,11 @@
     <Compile Include="Events.fs" />
     <Compile Include="Parameters.fs" />
     <Compile Include="GameData.fs" />
+    <Compile Include="DomainEvents\DomainEvent.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FsToolkit.ErrorHandling" Version="5.2.0" />
   </ItemGroup>
 
 </Project>

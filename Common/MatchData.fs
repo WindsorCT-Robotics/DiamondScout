@@ -1,5 +1,7 @@
 namespace ParagonRobotics.DiamondScout.Common
 
+open System
+
 [<Struct>]
 type MatchNumber = MatchNumber of uint
 
@@ -7,6 +9,10 @@ type MatchNumber = MatchNumber of uint
 type Alliance =
     | Red
     | Blue
+    member this.Match (redAction: Action, blueAction: Action) =
+        match this with
+        | Red -> redAction
+        | Blue -> blueAction
 
 [<Struct>]
 [<RequireQualifiedAccess>]
@@ -14,12 +20,22 @@ type EndgameResult =
     | Success of ScoringTier
     | Failure
     | NotAttempted
+    member this.Match (successAction: Action<ScoringTier>, failureAction: Action, notAttemptedAction: Action) =
+        match this with
+        | Success tier -> successAction.Invoke tier
+        | Failure -> failureAction.Invoke()
+        | NotAttempted -> notAttemptedAction.Invoke()
 
 [<Struct>]
 type BotStrategy =
     | Offense
     | Defense
     | Both
+    member this.Match (offenseAction: Action, defenseAction: Action, bothAction: Action) =
+        match this with
+        | Offense -> offenseAction.Invoke()
+        | Defense -> defenseAction.Invoke()
+        | Both -> bothAction.Invoke()
 
 type Endgame =
     { Capable: EndgameCapable
@@ -28,17 +44,27 @@ type Endgame =
     static member NotCapable =
         { Capable = NotCapable
           Result = EndgameResult.NotAttempted }
+    static member Create (capable) = { Capable = capable; Result = EndgameResult.NotAttempted }
+    member this.Success (tier) = { this with Result = EndgameResult.Success tier }
+    member this.Failure() = { this with Result = EndgameResult.Failure }
+    member this.NotAttempted() = { this with Result = EndgameResult.NotAttempted }
 
 [<Struct>]
 type Breakdown =
     | AutoEmergency
     | Emergency
     | Malfunction
+    member this.Match (autoEmergencyAction: Action, emergencyAction: Action, malfunctionAction: Action) =
+        match this with
+        | AutoEmergency -> autoEmergencyAction.Invoke()
+        | Emergency -> emergencyAction.Invoke()
+        | Malfunction -> malfunctionAction.Invoke()
 
 type ScoreRecord =
     { GamePiece: GamePiece
       Tier: ScoringTier
       Phase: SubPhaseId }
+    static member create gamePiece tier phase = { GamePiece = gamePiece; Tier = tier; Phase = phase }
 
 type MatchScoutResult =
     { Team: Team
@@ -50,11 +76,27 @@ type MatchScoutResult =
       GamePoints: Points option
       RankingPoints: RankingPoints option
       Notes: Note list }
+    static member create team alliance endgame = {
+        Team = team
+        Alliance = alliance
+        Scores = []
+        Endgame = endgame
+        Breakdowns = []
+        Infractions = []
+        GamePoints = None
+        RankingPoints = None
+        Notes = []
+    }
 
 type Match =
     { MatchNumber: MatchNumber
       MatchScoutResults: MatchScoutResult list
       Winner: Alliance option }
+    static member create matchNumber matchScoutResults = {
+        MatchNumber = matchNumber
+        MatchScoutResults = matchScoutResults
+        Winner = None
+    }
 
 module Match =
     let createMatch matchNumber matchScoutResults =
