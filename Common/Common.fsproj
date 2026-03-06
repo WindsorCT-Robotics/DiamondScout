@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Compile Include="Identifiers.fs" />
+    <Compile Include="EventStream.fs" />
     <Compile Include="User.fs" />
     <Compile Include="Note.fs" />
     <Compile Include="Teams.fs" />
@@ -26,7 +27,6 @@
     <Compile Include="Events.fs" />
     <Compile Include="Parameters.fs" />
     <Compile Include="GameData.fs" />
-    <Compile Include="DomainEvents\DomainEvent.fs" />
   </ItemGroup>
 
   <ItemGroup>
