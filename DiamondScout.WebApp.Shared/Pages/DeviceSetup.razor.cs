@@ -5,7 +5,7 @@ using ParagonRobotics.DiamondScout.Common;
 
 namespace DiamondScout.WebApp.Shared.Pages;
 
-public partial class UserSetup
+public partial class DeviceSetup
 {
     [Inject] IJSRuntime JS { get; set; } = default!;
     [Inject] NavigationManager Nav { get; set; } = default!;
@@ -17,32 +17,17 @@ public partial class UserSetup
     protected string ResetPassword = "";
     protected string? ResetError;
     
-    protected async Task InitializeTablet()
+    
+    private record User(string Name, string Role);
+    
+    protected async Task InitializeDevice()
     {
-        var userId = UserId.NewUserId(Guid.NewGuid());
-
-        var role = SelectedRole switch
+        var user = JsonSerializer.Deserialize<User>(await JS.InvokeAsync<string>("localStorage.getItem", "diamondscout_user"));
+        if (user != null)
         {
-            "Admin" => Role.Admin,
-            "Viewer" => Role.Viewer,
-            _ => Role.Scouter
-        };
-
-        var user = new User(Name, role);
-
-        var payload = new
-        {
-            UserId = userId.Item.ToString(),
-            Name = user.Name,
-            Role = user.Role.ToString()
-        };
-
-        await JS.InvokeVoidAsync(
-            "localStorage.setItem",
-            "diamondscout_user",
-            JsonSerializer.Serialize(payload));
-
-        Nav.NavigateTo("/");
+            Name = user.Name;
+            SelectedRole = user.Role;
+        }
     }
 
     protected async Task ResetUserData()
