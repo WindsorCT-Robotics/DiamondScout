@@ -44,8 +44,8 @@ type Endgame =
     static member NotCapable =
         { Capable = NotCapable
           Result = EndgameResult.NotAttempted }
-    static member Create (capable) = { Capable = capable; Result = EndgameResult.NotAttempted }
-    member this.Success (tier) = { this with Result = EndgameResult.Success tier }
+    static member Create capable = { Capable = capable; Result = EndgameResult.NotAttempted }
+    member this.Success tier = { this with Result = EndgameResult.Success tier }
     member this.Failure() = { this with Result = EndgameResult.Failure }
     member this.NotAttempted() = { this with Result = EndgameResult.NotAttempted }
 
