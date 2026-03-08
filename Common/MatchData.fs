@@ -9,7 +9,7 @@ type Match =
     { MatchNumber: MatchNumber
       MatchScoutResults: ScoutingResultsId list
       Winner: Alliance option }
-    
+
 [<RequireQualifiedAccess>]
 module Match =
     let createMatch matchNumber matchScoutResults =
