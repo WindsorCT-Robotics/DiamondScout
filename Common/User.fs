@@ -24,7 +24,6 @@ type User =
     member this.IsAdmin = this.Role = Admin
     member this.IsScouter = this.Role = Scouter
     member this.IsViewer = this.Role = Viewer
-    static member Zero = { Name = ""; Role = Viewer; IsActive = true }
 
 [<RequireQualifiedAccess>]
 module User =
@@ -38,34 +37,59 @@ module User =
     let deactivate user = { user with IsActive = false }
     let activate user = { user with IsActive = true }
 
+    let create name role =
+        { Name = name
+          Role = role
+          IsActive = true }
+
     type Event =
-        | NameChanged of newName: string
-        | RoleChanged of newRole: Role
-        | Deactivated
-        | Activated
+        | UserCreated of userId: UserId * user: User
+        | NameChanged of userId: UserId * newName: string
+        | RoleChanged of userId: UserId * newRole: Role
+        | Deactivated of userId: UserId
+        | Activated of userId: UserId
+        | Deleted of userId: UserId
 
     module Event =
-        let evolve user event =
+        let evolve users event =
+            let change userId f =
+                users |> Map.change userId (Option.map f)
+
             match event with
-                | NameChanged name -> setName name user
-                | RoleChanged role -> setRole role user
-                | Deactivated -> deactivate user
-                | Activated -> activate user
+            | UserCreated(userId, user) -> users |> Map.add userId user
+            | NameChanged(userId, name) -> change userId (setName name)
+            | RoleChanged(userId, role) -> change userId (setRole role)
+            | Deactivated userId -> change userId deactivate
+            | Activated userId -> change userId activate
+            | Deleted userId -> users |> Map.remove userId
 
     type Command =
         | Create of name: string * role: Role
-        | ChangeName of newName: string
-        | ChangeRole of newRole: Role
-        | Deactivate
-        | Activate
+        | ChangeName of userId: UserId * newName: string
+        | ChangeRole of userId: UserId * newRole: Role
+        | Deactivate of userId: UserId
+        | Activate of userId: UserId
+        | Delete of userId: UserId
 
     type Error =
         | NameNotProvided
         | RoleNotProvided
         | UserAlreadyDeactivated
         | UserAlreadyActivated
+        | DuplicateName of userId: UserId
+        | UserNotFound of userId: UserId
 
     module Validation =
+        let nameNotTaken (users: Map<UserId, User>) user =
+            match users |> Map.tryFindKey (fun _ u -> u.Name = user.Name) with
+            | Some id -> id |> DuplicateName |> Validation.error
+            | None -> Validation.ok user
+
+        let userExists (users: Map<UserId, User>) userId =
+            match users |> Map.tryFind userId with
+            | Some user -> Validation.ok user
+            | None -> userId |> UserNotFound |> Validation.error
+
         let nameNotEmpty user =
             match String.IsNullOrWhiteSpace user.Name with
             | true -> Validation.error NameNotProvided
@@ -81,37 +105,43 @@ module User =
             | true -> Validation.ok user
             | false -> Validation.error UserAlreadyDeactivated
 
-        let userAlreadyActivated (user: User) =
+        let userNotActivated (user: User) =
             match user.IsActive with
             | true -> Validation.error UserAlreadyActivated
             | false -> Validation.ok user
 
+    [<RequireQualifiedAccess>]
     module Command =
-        let decide command user =
+        let decide command users =
             match command with
-            | Create (name, role) ->
-                setName name >> setRole role >> activate
-                <| user
+            | Create(name, role) ->
+                let userId = Guid.NewGuid() |> UserId
+
+                create name role
                 |> Validation.nameNotEmpty
+                >>= Validation.nameNotTaken users
                 >>= Validation.roleNotNull
-                |> Validation.map (fun user -> [ NameChanged user.Name; RoleChanged user.Role; Activated])
-            | ChangeRole newRole ->
-                setRole newRole user
-                |> Validation.roleNotNull
-                |> Validation.map (fun user -> [ RoleChanged user.Role ])
-            | Deactivate ->
-                Validation.userNotDeactivated user
-                |> Validation.map (fun _ -> [Deactivated])
-            | Activate ->
-                user
-                |> Validation.userAlreadyActivated
-                |> Validation.map (fun _ -> [Activated])
-            | ChangeName newName ->
-                setName newName user
-                |> Validation.nameNotEmpty
-                |> Validation.map (fun user -> [ NameChanged user.Name ])
+                >>= Validation.userNotDeactivated
+                |> Validation.map (fun user -> [ UserCreated(userId, user) ])
+            | ChangeRole(id, newRole) ->
+                Validation.userExists users id
+                |> Validation.map (setRole newRole)
+                >>= Validation.roleNotNull
+                |> Validation.map (fun user -> [ RoleChanged(id, user.Role) ])
+            | Deactivate id ->
+                Validation.userExists users id
+                >>= Validation.userNotDeactivated
+                |> Validation.map (fun _ -> [ Deactivated id ])
+            | Activate id ->
+                Validation.userExists users id
+                >>= Validation.userNotActivated
+                |> Validation.map (fun _ -> [ Activated id ])
+            | ChangeName(id, newName) ->
+                Validation.userExists users id
+                |> Validation.map (setName newName)
+                >>= Validation.nameNotEmpty
+                |> Validation.map (fun user -> [ NameChanged(id, user.Name) ])
+            | Delete id -> Validation.userExists users id |> Validation.map (fun _ -> [ Deleted id ])
 
     let userEventStream =
-        { Init = User.Zero
-          Evolve = Event.evolve
-          Decide = Command.decide }
+        EventStream.create Map.empty<UserId, User> Event.evolve Command.decide

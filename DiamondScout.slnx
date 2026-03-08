@@ -3,4 +3,5 @@
     <Project Path="Application/Application.fsproj" />
   </Folder>
   <Project Path="Common/Common.fsproj" />
+  <Project Path="SyncContract/SyncContract.fsproj" />
 </Solution>

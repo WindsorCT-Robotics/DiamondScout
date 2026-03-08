@@ -10,6 +10,7 @@ type EventStream<'state, 'command, 'event, 'error> =
       Evolve: Evolve<'state, 'event>
       Decide: Decide<'state, 'command, 'event, 'error> }
 
+[<RequireQualifiedAccess>]
 module EventStream =
     let create initialState evolver decider =
         { Init = initialState

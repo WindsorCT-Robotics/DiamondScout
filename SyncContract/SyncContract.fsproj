@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <RootNamespace>ParagonRobotics.DiamondScout.SyncContract</RootNamespace>
+        <AssemblyName>ParagonRobotics.DiamondScout.SyncContract</AssemblyName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="ZstdNet" Version="1.5.7" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Include="ToScoutingDevice.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Application\Application.fsproj" />
+      <ProjectReference Include="..\Common\Common.fsproj" />
+    </ItemGroup>
+
+</Project>

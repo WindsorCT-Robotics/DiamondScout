@@ -9,27 +9,37 @@ type Game =
       GamePieces: GamePieceId list
       Infractions: InfractionId list
       PitResults: RobotId list
-      Events: EventId list
+      Events: FrcEventId list
       Parameters: ParameterDefinitionId list }
-    static member Create(year, name) = {
-        Year = year
-        Name = name
-        Phases = []
-        GamePieces = []
-        Infractions = []
-        PitResults = []
-        Events = []
-        Parameters = []
-    }
-    member this.AddPhase(phase) = { this with Phases = phase :: this.Phases }
-    member this.AddGamePiece(piece) = { this with GamePieces = piece :: this.GamePieces }
-    member this.AddInfraction(infraction) = { this with Infractions = infraction :: this.Infractions }
-    member this.AddPitResult(robot) = { this with PitResults = robot :: this.PitResults }
-    member this.AddEvent(event) = { this with Events = event :: this.Events }
-    member this.AddParameter(parameter) = { this with Parameters = parameter :: this.Parameters }
-    member this.RemovePhase(phase) = { this with Phases = this.Phases |> List.filter (fun p -> p <> phase) }
-    member this.RemoveGamePiece(piece) = { this with GamePieces = this.GamePieces |> List.filter (fun p -> p <> piece) }
-    member this.RemoveInfraction(infraction) = { this with Infractions = this.Infractions |> List.filter (fun p -> p <> infraction) }
-    member this.RemovePitResult(robot) = { this with PitResults = this.PitResults |> List.filter (fun p -> p <> robot) }
-    member this.RemoveEvent(event) = { this with Events = this.Events |> List.filter (fun p -> p <> event) }
-    member this.RemoveParameter(parameter) = { this with Parameters = this.Parameters |> List.filter (fun p -> p <> parameter) }
+
+[<RequireQualifiedAccess>]
+module Game =
+    let setYear year game = { game with Year = year }
+    let setName name game = { game with Game.Name = name }
+    let addPhase phase game = { game with Phases = phase :: game.Phases }
+    let removePhase phase game = { game with Phases = game.Phases |> List.filter (not << (=) phase) }
+    let addGamePiece gamePiece game = { game with GamePieces = gamePiece :: game.GamePieces }
+    let removeGamePiece gamePiece game = { game with GamePieces = game.GamePieces |> List.filter (not << (=) gamePiece) }
+    let addInfraction infraction game = { game with Game.Infractions = infraction :: game.Infractions }
+    let removeInfraction infraction game = { game with Game.Infractions = game.Infractions |> List.filter (not << (=) infraction) }
+    let addPitResult pitResult game = { game with PitResults = pitResult :: game.PitResults }
+    let removePitResult pitResult game = { game with PitResults = game.PitResults |> List.filter (not << (=) pitResult) }
+    let addFrcEvent event game = { game with Events = event :: game.Events }
+    let removeFrcEvent event game = { game with Events = game.Events |> List.filter (not << (=) event) }
+    let addParameter parameter game = { game with Game.Parameters = parameter :: game.Parameters }
+    let removeParameter parameter game = { game with Game.Parameters = game.Parameters |> List.filter (not << (=) parameter) }
+    
+    type Event =
+        | GameCreated of gameId: GameId * game: Game
+        | SubPhaseCreated of gameId: GameId * subPhaseId: SubPhaseId
+        | SubPhaseDeleted of gameId: GameId * subPhaseId: SubPhaseId
+        | GamePieceCreated of gameId: GameId * gamePieceId: GamePieceId
+        | GamePieceDeleted of gameId: GameId * gamePieceId: GamePieceId
+        | InfractionCreated of gameId: GameId * infractionId: InfractionId
+        | InfractionDeleted of gameId: GameId * infractionId: InfractionId
+        | PitResultCreated of gameId: GameId * pitResultId: RobotId
+        | PitResultDeleted of gameId: GameId * pitResultId: RobotId
+        | ParameterDefinitionCreated of gameId: GameId * parameterDefinitionId: ParameterDefinitionId
+        | ParameterDefinitionDeleted of gameId: GameId * parameterDefinitionId: ParameterDefinitionId
+        | FrcEventCreated of gameId: GameId * frcEventId: FrcEventId
+        | FrcEventDeleted of gameId: GameId * frcEventId: FrcEventId

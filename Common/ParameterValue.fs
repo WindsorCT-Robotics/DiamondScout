@@ -3,54 +3,6 @@ namespace ParagonRobotics.DiamondScout.Common
 open System
 open System.Collections.Generic
 
-type NumericSpinnerType =
-    | IntegralSpinner of int
-    | DecimalSpinner of double
-
-    member this.Match(integralSpinnerAction: Action<int>, decimalSpinnerAction: Action<double>) =
-        match this with
-        | IntegralSpinner i -> integralSpinnerAction.Invoke i
-        | DecimalSpinner d -> decimalSpinnerAction.Invoke d
-
-type IsActive =
-    | Active
-    | Inactive
-
-    member this.Match(activeAction: Action, inactiveAction: Action) =
-        match this with
-        | Active -> activeAction.Invoke()
-        | Inactive -> inactiveAction.Invoke()
-
-type ParameterSpec =
-    | Dropdown of options: string list * defaultChoice: string
-    | TextBox of defaultText: string
-    | NumericSpinner of NumericSpinnerType
-    | RadialSelection of options: string list * defaultChoice: string
-    | MultiSelect of options: string list * defaultChoices: string list
-
-    member this.Match
-        (
-            dropdownAction: Action<ICollection<string>, string>,
-            textBoxAction: Action<string>,
-            numericSpinnerAction: Action<NumericSpinnerType>,
-            radialSelectionAction: Action<ICollection<string>, string>,
-            multiSelectAction: Action<ICollection<string>, ICollection<string>>
-        ) =
-        match this with
-        | Dropdown(options, defaultChoice) -> dropdownAction.Invoke(ResizeArray options, defaultChoice)
-        | TextBox defaultText -> textBoxAction.Invoke(defaultText)
-        | NumericSpinner spinnerType -> numericSpinnerAction.Invoke(spinnerType)
-        | RadialSelection(options, defaultChoice) -> radialSelectionAction.Invoke(ResizeArray options, defaultChoice)
-        | MultiSelect(options, defaultChoices) ->
-            multiSelectAction.Invoke(ResizeArray options, ResizeArray defaultChoices)
-
-type ParameterDefinition =
-    { Name: string
-      Spec: ParameterSpec
-      Active: IsActive }
-    static member Create(name: string, spec: ParameterSpec, active: IsActive) =
-        { ParameterDefinition.Name = name; Spec = spec; Active = active }
-
 type ParameterValue =
     | DropdownChoice of string
     | Text of string
@@ -58,14 +10,16 @@ type ParameterValue =
     | Decimal of double
     | RadialChoice of string
     | MultiSelectChoices of string list
-    member this.Match(
-        dropdownAction: Action<string>,
-        textBoxAction: Action<string>,
-        integralSpinnerAction: Action<int>,
-        decimalSpinnerAction: Action<double>,
-        radialSelectionAction: Action<string>,
-        multiSelectAction: Action<string list>
-    ) =
+
+    member this.Match
+        (
+            dropdownAction: Action<string>,
+            textBoxAction: Action<string>,
+            integralSpinnerAction: Action<int>,
+            decimalSpinnerAction: Action<double>,
+            radialSelectionAction: Action<string>,
+            multiSelectAction: Action<string IReadOnlyList>
+        ) =
         match this with
         | DropdownChoice choice -> dropdownAction.Invoke(choice)
         | Text text -> textBoxAction.Invoke(text)
@@ -77,15 +31,8 @@ type ParameterValue =
 type RobotParameters =
     { Robot: RobotId
       Parameters: Map<ParameterDefinitionId, ParameterValue> }
-    static member Create(robot: RobotId, parameters: IDictionary<ParameterDefinitionId, ParameterValue>) =
-        { Robot = robot; Parameters =
-            match parameters with
-            | :? Map<ParameterDefinitionId, ParameterValue> as m -> m
-            | d -> d |> Seq.map (|KeyValue|) |> Map.ofSeq }
-    member this.AddParameter(id, value) = { this with Parameters = Map.add id value this.Parameters }
-    member this.RemoveParameter(id) = { this with Parameters = Map.remove id this.Parameters }
-    member this.GetParameter(id) = Map.tryFind id this.Parameters
 
+[<RequireQualifiedAccess>]
 module Parameter =
     let defaultValue (def: ParameterDefinition) : ParameterValue =
         match def.Spec with

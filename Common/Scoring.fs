@@ -9,6 +9,7 @@ type ScoringTier =
         /// The level of the scoring tier.
         Level: uint
     }
+
     static member Zero = { Name = "Zero"; Level = 0u }
 
 type QualitativeScoring =
@@ -41,6 +42,7 @@ type ScoreValue =
 /// A scoring value that can be evaluated given a ScoringTier.
 type Score = private Score of (ScoringTier -> Points)
 
+[<RequireQualifiedAccess>]
 module Score =
     let getPoints tier (Score score) : Points = score tier
 
