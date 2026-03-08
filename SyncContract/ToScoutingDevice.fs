@@ -21,6 +21,9 @@ type ScoutedMatch =
         Teams: IReadOnlyDictionary<TeamId, ScoutedTeam>
     }
 
+type ScoutingDataError =
+    | DataTooLarge of data: byte[]
+
 type ScoutingDataModel =
     { GameName: string
       Users: IReadOnlyDictionary<UserId, User>
@@ -29,7 +32,24 @@ type ScoutingDataModel =
       GamePieces: IReadOnlyDictionary<GamePieceId, GamePiece>
       Infractions: IReadOnlyDictionary<InfractionId, Infraction>
       Event: struct (FrcEventId * string) }
-      
+    member data.Compress () =
+        use compressorOptions = new CompressionOptions(CompressionOptions.MaxCompressionLevel)
+        use compressor = new Compressor(compressorOptions)
+        let jsonOptions = JsonSerializerOptions()
+        jsonOptions.WriteIndented <- false
+
+        JsonSerializer.SerializeToUtf8Bytes(data, jsonOptions)
+        |> compressor.Wrap
+        |> function
+            | data when data.Length > 2953 -> data |> DataTooLarge |> Error
+            | data -> data |> Ok
+    static member Decompress (compressedData: byte[]) =
+        use decompressor = new Decompressor()
+
+        compressedData
+        |> decompressor.Unwrap
+        |> JsonSerializer.Deserialize<ScoutingDataModel>
+
 type CompleteDataModel =
     {
         ScoutingData: ScoutingDataModel
@@ -49,25 +69,3 @@ type EventStores = {
     MatchStore: IEventStore<Match.Event>
     EventsStore: IEventStore<FrcEvent.Event>
 }
-
-type ScoutingDataError =
-    | DataTooLarge of data: byte[]
-    
-type ScoutingDeviceDataGenerator(gameId: GameId, matchId: MatchId, eventStores: EventStores) =
-    static member private Compress data =
-        use compressorOptions = new CompressionOptions(CompressionOptions.MaxCompressionLevel)
-        use compressor = new Compressor(compressorOptions)
-        let jsonOptions = JsonSerializerOptions()
-        jsonOptions.WriteIndented <- false
-        
-        JsonSerializer.SerializeToUtf8Bytes(data, jsonOptions)
-        |> compressor.Wrap
-        |> function
-            | data when data.Length > 2953 -> data |> DataTooLarge |> Error
-            | data -> data |> Ok
-            
-    member this.GenerateGameData() =
-        
-    member this.GenerateMatchData() =
-        
-    member this.GenerateCompleteData() =
