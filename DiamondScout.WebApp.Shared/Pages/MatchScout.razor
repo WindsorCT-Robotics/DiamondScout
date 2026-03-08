@@ -7,7 +7,7 @@
 <div class="mb-6">
     <div id="setup" class="mb-6">
         <h1>Setup</h1>
-    
+
         <label for="teamNumber">Team Number:</label>
         <input type="number" id="teamNumber" min="1" max="9999" @bind="TeamNumber" />
         <p>Selected team number: @TeamNumber</p>
@@ -28,7 +28,8 @@
 
     <div id="auto" class="mb-6">
         <h1>Autonomous</h1>
-        
+    
+        <!-- starting position -->
         <label for="startpos">Starting Position:</label>
         <select id="startpos" @bind="StartingPosition">
             @foreach (var startpos in StartingOptions)
@@ -36,22 +37,52 @@
                 <option value="@startpos">@startpos</option>
             }
         </select>
-        
         <p>Starting Position: @StartingPosition</p>
-        
         <br/>
-        
+    
+        <!-- preloaded fuel -->
         <label for="prefuel">Preload Fuel?</label>
         <select id="prefuel" @bind="PreloadedFuel">
-            @foreach (var prefuel in PreloadFuelBool)
+            @foreach (var prefuel in IsFuelLoaded)
             {
                 <option value="@prefuel">@prefuel</option>
             }
         </select>
-        
         <p>Preloaded Fuel: @PreloadedFuel</p>
-        
         <br/>
+    
+        <!-- Shot fuel -->
+        <label for="shotfuel">Is Fuel Shot?</label>
+        <select id="shotfuel" @bind="ShotFuel">
+            @foreach (var shotfuel in IsFuelShot)
+            {
+                <option value="@shotfuel">@shotfuel</option>
+            }
+        </select>
+        <p>Fuel Shot: @ShotFuel</p>
+        <br/>
+
+        <label for="autoAccuracy">How Is Their Auto Shooting Accuracy?</label>
+        <select id="autoAccuracy"
+                value="@AutoShootingAccuracyDisplay"
+                @onchange="OnAutoAccuracyChanged">
+            @foreach (var option in AutoAccuracyOptions)
+            {
+                <option value="@option.Label">@option.Label</option>
+            }
+        </select>
+        <p>Auto Shooting Accuracy: @AutoShootingAccuracyDisplay</p>
+        <br/>
+
+        <!-- collected fuel -->
+        <label for="collectedFuel">Is More Fuel Collected?</label>
+        <select id="collectedFuel" @bind="CollectedFuel">
+            @foreach (var collectedfuel in IsMoreFuelCollected)
+            {
+                <option value="@collectedfuel">@collectedfuel</option>
+            }
+        </select>
+        <p>Fuel Collected: @CollectedFuel</p>
     </div>
     <br/>
 
