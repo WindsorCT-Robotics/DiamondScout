@@ -1,24 +1,7 @@
 namespace ParagonRobotics.DiamondScout.Common
 
-type NumericSpinnerType =
-    | IntegralSpinner of int
-    | DecimalSpinner of double
-
-type IsActive =
-    | Active of bool
-    | Inactive of bool
-
-type ParameterSpec =
-    | Dropdown of options: string list * defaultChoice: string
-    | TextBox of defaultText: string
-    | NumericSpinner of NumericSpinnerType
-    | RadialSelection of options: string list * defaultChoice: string
-    | MultiSelect of options: string list * defaultChoices: string list
-
-type ParameterDefinition =
-    { Name: string
-      Spec: ParameterSpec
-      Active: IsActive }
+open System
+open System.Collections.Generic
 
 type ParameterValue =
     | DropdownChoice of string
@@ -28,10 +11,28 @@ type ParameterValue =
     | RadialChoice of string
     | MultiSelectChoices of string list
 
+    member this.Match
+        (
+            dropdownAction: Action<string>,
+            textBoxAction: Action<string>,
+            integralSpinnerAction: Action<int>,
+            decimalSpinnerAction: Action<double>,
+            radialSelectionAction: Action<string>,
+            multiSelectAction: Action<string IReadOnlyList>
+        ) =
+        match this with
+        | DropdownChoice choice -> dropdownAction.Invoke(choice)
+        | Text text -> textBoxAction.Invoke(text)
+        | Integral i -> integralSpinnerAction.Invoke(i)
+        | Decimal d -> decimalSpinnerAction.Invoke(d)
+        | RadialChoice choice -> radialSelectionAction.Invoke(choice)
+        | MultiSelectChoices choices -> multiSelectAction.Invoke(choices)
+
 type RobotParameters =
     { Robot: RobotId
       Parameters: Map<ParameterDefinitionId, ParameterValue> }
 
+[<RequireQualifiedAccess>]
 module Parameter =
     let defaultValue (def: ParameterDefinition) : ParameterValue =
         match def.Spec with

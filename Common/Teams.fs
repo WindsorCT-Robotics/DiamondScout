@@ -22,9 +22,20 @@ type Team =
         /// The team's name.
         TeamName: TeamName
         /// Notes about the team.
-        Notes: Note list
+        Notes: NoteId list
     }
 
+    static member Create teamNumber teamName =
+        { TeamNumber = teamNumber
+          TeamName = teamName
+          Notes = [] }
+
+    member this.ChangeName teamName = { this with TeamName = teamName }
+
+    member this.AddNote note =
+        { this with Notes = note :: this.Notes }
+
+[<RequireQualifiedAccess>]
 module Team =
     let create teamNumber teamName =
         { TeamNumber = teamNumber
@@ -35,3 +46,9 @@ module Team =
 
     let addNote team note =
         { team with Notes = note :: team.Notes }
+
+    type Event =
+        | TeamAdded of teamId: TeamId * team: Team
+        | TeamNameChanged of teamId: TeamId * teamName: TeamName
+        | NoteAdded of teamId: TeamId * noteId: NoteId
+        | NoteRemoved of teamId: TeamId * noteId: NoteId

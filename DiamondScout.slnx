@@ -1,5 +1,7 @@
 <Solution>
+  <Folder Name="/Backend/">
+    <Project Path="Application/Application.fsproj" />
+  </Folder>
   <Project Path="Common/Common.fsproj" />
-  <Project Path="DiamondScout.WebApp.Shared/DiamondScout.WebApp.Shared.csproj" />
-  <Project Path="DiamondScout.WebApp/DiamondScout.WebApp.csproj" />
+  <Project Path="SyncContract/SyncContract.fsproj" />
 </Solution>

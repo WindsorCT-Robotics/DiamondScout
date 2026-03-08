@@ -27,6 +27,20 @@ type RankingPointGrant =
         Threshold: RankingPointsThreshold
     }
 
+    static member Create value threshold =
+        { Value = value; Threshold = threshold }
+
+    member this.ChangeValue value = { this with Value = value }
+    member this.ChangeRankingPointThreshold threshold = { this with Threshold = threshold }
+
+[<RequireQualifiedAccess>]
 module Ranking =
     let create value threshold =
         { Value = value; Threshold = threshold }
+
+    let changeValue value rankingPointGrant =
+        { rankingPointGrant with Value = value }
+
+    let changeRankingPointThreshold threshold rankingPointGrant =
+        { rankingPointGrant with
+            Threshold = threshold }
