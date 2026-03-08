@@ -43,4 +43,4 @@ module ParameterDefinition =
     let changeSpec spec (param: ParameterDefinition) = { param with Spec = spec }
 
     type Event =
-        | ParameterCreated of
+        | ParameterCreated of ParameterDefinition
