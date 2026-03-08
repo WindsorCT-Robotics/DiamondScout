@@ -32,14 +32,15 @@ type ParameterSpec =
         | TextBox defaultText -> textBoxAction.Invoke(defaultText)
         | NumericSpinner spinnerType -> numericSpinnerAction.Invoke(spinnerType)
         | RadialSelection(options, defaultChoice) -> radialSelectionAction.Invoke(options, defaultChoice)
-        | MultiSelect(options, defaultChoices) ->
-            multiSelectAction.Invoke(options, defaultChoices)
+        | MultiSelect(options, defaultChoices) -> multiSelectAction.Invoke(options, defaultChoices)
 
-type ParameterDefinition =
-    { Name: string
-      Spec: ParameterSpec }
+type ParameterDefinition = { Name: string; Spec: ParameterSpec }
 
 [<RequireQualifiedAccess>]
 module ParameterDefinition =
     let create name spec = { Name = name; Spec = spec }
-    
+    let changeName name (param: ParameterDefinition) = { param with Name = name }
+    let changeSpec spec (param: ParameterDefinition) = { param with Spec = spec }
+
+    type Event =
+        | ParameterCreated of

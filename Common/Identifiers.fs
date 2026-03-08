@@ -83,4 +83,5 @@ type NoteId =
 [<Struct>]
 type ScoutingResultsId =
     | ScoutingResultsId of Guid
+
     static member Zero = ScoutingResultsId Guid.Empty

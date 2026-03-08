@@ -78,13 +78,15 @@ type ScoutingResults =
 
 [<RequireQualifiedAccess>]
 module ScoutingResults =
-    let createScoutingResult game frcMatch team alliance endgameCapability=
+    let createScoutingResult game frcMatch team alliance endgameCapability =
         { Game = game
           Match = frcMatch
           Team = team
           Alliance = alliance
           Scores = []
-          Endgame = { Capable = endgameCapability; Result = EndgameResult.NotAttempted }
+          Endgame =
+            { Capable = endgameCapability
+              Result = EndgameResult.NotAttempted }
           Breakdowns = []
           Infractions = []
           GamePoints = None

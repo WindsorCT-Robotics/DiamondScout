@@ -16,19 +16,55 @@ type Game =
 module Game =
     let setYear year game = { game with Year = year }
     let setName name game = { game with Game.Name = name }
-    let addPhase phase game = { game with Phases = phase :: game.Phases }
-    let removePhase phase game = { game with Phases = game.Phases |> List.filter (not << (=) phase) }
-    let addGamePiece gamePiece game = { game with GamePieces = gamePiece :: game.GamePieces }
-    let removeGamePiece gamePiece game = { game with GamePieces = game.GamePieces |> List.filter (not << (=) gamePiece) }
-    let addInfraction infraction game = { game with Game.Infractions = infraction :: game.Infractions }
-    let removeInfraction infraction game = { game with Game.Infractions = game.Infractions |> List.filter (not << (=) infraction) }
-    let addPitResult pitResult game = { game with PitResults = pitResult :: game.PitResults }
-    let removePitResult pitResult game = { game with PitResults = game.PitResults |> List.filter (not << (=) pitResult) }
-    let addFrcEvent event game = { game with Events = event :: game.Events }
-    let removeFrcEvent event game = { game with Events = game.Events |> List.filter (not << (=) event) }
-    let addParameter parameter game = { game with Game.Parameters = parameter :: game.Parameters }
-    let removeParameter parameter game = { game with Game.Parameters = game.Parameters |> List.filter (not << (=) parameter) }
-    
+
+    let addPhase phase game =
+        { game with
+            Phases = phase :: game.Phases }
+
+    let removePhase phase game =
+        { game with
+            Phases = game.Phases |> List.filter (not << (=) phase) }
+
+    let addGamePiece gamePiece game =
+        { game with
+            GamePieces = gamePiece :: game.GamePieces }
+
+    let removeGamePiece gamePiece game =
+        { game with
+            GamePieces = game.GamePieces |> List.filter (not << (=) gamePiece) }
+
+    let addInfraction infraction game =
+        { game with
+            Game.Infractions = infraction :: game.Infractions }
+
+    let removeInfraction infraction game =
+        { game with
+            Game.Infractions = game.Infractions |> List.filter (not << (=) infraction) }
+
+    let addPitResult pitResult game =
+        { game with
+            PitResults = pitResult :: game.PitResults }
+
+    let removePitResult pitResult game =
+        { game with
+            PitResults = game.PitResults |> List.filter (not << (=) pitResult) }
+
+    let addFrcEvent event game =
+        { game with
+            Events = event :: game.Events }
+
+    let removeFrcEvent event game =
+        { game with
+            Events = game.Events |> List.filter (not << (=) event) }
+
+    let addParameter parameter game =
+        { game with
+            Game.Parameters = parameter :: game.Parameters }
+
+    let removeParameter parameter game =
+        { game with
+            Game.Parameters = game.Parameters |> List.filter (not << (=) parameter) }
+
     type Event =
         | GameCreated of gameId: GameId * game: Game
         | SubPhaseCreated of gameId: GameId * subPhaseId: SubPhaseId

@@ -43,11 +43,11 @@ type EventStores = {
     PhaseStore: IEventStore<SubPhase.Event>
     GamePieceStore: IEventStore<GamePiece.Event>
     InfractionStore: IEventStore<Infraction.Event>
-    RobotParameterDefinitionStore: IEventStore<RobotParameterDefinition.Event>
-    RobotParameterStore: IEventStore<RobotParameter.Event>
+    RobotParameterDefinitionStore: IEventStore<ParameterDefinition.Event>
+    RobotParameterStore: IEventStore<ParameterValue.Event>
     RobotStore: IEventStore<Robot.Event>
     MatchStore: IEventStore<Match.Event>
-    EventsStore: IEventStore<Event.Event>
+    EventsStore: IEventStore<FrcEvent.Event>
 }
 
 type ScoutingDataError =
