@@ -111,7 +111,7 @@ public partial class DeviceSetup
             _ => Role.Scouter
         };
 
-        var user = new User(Name, role);
+        var user = new User(Name, role, true);
 
         var payload = new
         {
