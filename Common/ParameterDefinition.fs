@@ -13,19 +13,21 @@ type NumericSpinnerType =
         | DecimalSpinner d -> decimalSpinnerAction.Invoke d
 
 type ParameterSpec =
-    | Dropdown of options: string list * defaultChoice: string
+    | Dropdown of options: string list * defaultChoice: int
     | TextBox of defaultText: string
     | NumericSpinner of NumericSpinnerType
-    | RadialSelection of options: string list * defaultChoice: string
-    | MultiSelect of options: string list * defaultChoices: string list
+    | RadialSelection of options: string list * defaultChoice: int
+    | MultiSelect of options: string list * defaultChoices: int list
+    | Checkbox of defaultState: bool
 
     member this.Match
         (
-            dropdownAction: Action<string IReadOnlyList, string>,
+            dropdownAction: Action<string IReadOnlyList, int>,
             textBoxAction: Action<string>,
             numericSpinnerAction: Action<NumericSpinnerType>,
-            radialSelectionAction: Action<string IReadOnlyList, string>,
-            multiSelectAction: Action<string IReadOnlyList, string IReadOnlyList>
+            radialSelectionAction: Action<string IReadOnlyList, int>,
+            multiSelectAction: Action<string IReadOnlyList, int IReadOnlyList>,
+            checkboxAction: Action<bool>
         ) =
         match this with
         | Dropdown(options, defaultChoice) -> dropdownAction.Invoke(options, defaultChoice)
@@ -33,6 +35,7 @@ type ParameterSpec =
         | NumericSpinner spinnerType -> numericSpinnerAction.Invoke(spinnerType)
         | RadialSelection(options, defaultChoice) -> radialSelectionAction.Invoke(options, defaultChoice)
         | MultiSelect(options, defaultChoices) -> multiSelectAction.Invoke(options, defaultChoices)
+        | Checkbox defaultOption -> checkboxAction.Invoke(defaultOption)
 
 type ParameterDefinition = { Name: string; Spec: ParameterSpec }
 
@@ -43,4 +46,7 @@ module ParameterDefinition =
     let changeSpec spec (param: ParameterDefinition) = { param with Spec = spec }
 
     type Event =
-        | ParameterCreated of
+        | ParameterCreated of parameterId: ParameterDefinitionId * newParameter: ParameterDefinition
+        | ParameterNameChanged of parameterId: ParameterDefinitionId * newName: string
+        | ParameterSpecChanged of parameterId: ParameterDefinitionId * newSpec: ParameterSpec
+        | ParameterDeleted of parameterId: ParameterDefinitionId

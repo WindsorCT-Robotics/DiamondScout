@@ -72,7 +72,7 @@ type ScoutingResults =
       Endgame: Endgame
       Breakdowns: Breakdown list
       Infractions: InfractionId list
-      GamePoints: Points option
+      GamePoints: Points option // Add the ability to manually enter score
       RankingPoints: RankingPoints option
       Notes: NoteId list }
 

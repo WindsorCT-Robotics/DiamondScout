@@ -20,6 +20,7 @@ type User =
     { Name: string
       Role: Role
       IsActive: bool }
+    static member Deleted = { Name = "Deleted User"; Role = Viewer; IsActive = false }
 
     member this.IsAdmin = this.Role = Admin
     member this.IsScouter = this.Role = Scouter
@@ -27,6 +28,9 @@ type User =
 
 [<RequireQualifiedAccess>]
 module User =
+    let initialState =
+        Map [ UserId.Zero, User.Deleted ]
+        
     let isAdmin user = user.Role = Admin
     let isScouter user = user.Role = Scouter
     let isViewer user = user.Role = Viewer
@@ -144,4 +148,4 @@ module User =
             | Delete id -> Validation.userExists users id |> Validation.map (fun _ -> [ Deleted id ])
 
     let userEventStream =
-        EventStream.create Map.empty<UserId, User> Event.evolve Command.decide
+        EventStream.create initialState Event.evolve Command.decide

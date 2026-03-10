@@ -6,8 +6,6 @@ namespace ParagonRobotics.DiamondScout.SyncContract.ToScoutingDevice
 open System.Collections.Generic
 open ParagonRobotics.DiamondScout.Common
 open ParagonRobotics.DiamondScout.Common.DomainEvents
-open ZstdNet
-open System.Text.Json
 
 type ScoutedTeam =
     { Team: Team
@@ -21,9 +19,6 @@ type ScoutedMatch =
         Teams: IReadOnlyDictionary<TeamId, ScoutedTeam>
     }
 
-type ScoutingDataError =
-    | DataTooLarge of data: byte[]
-
 type ScoutingDataModel =
     { GameName: string
       Users: IReadOnlyDictionary<UserId, User>
@@ -32,24 +27,7 @@ type ScoutingDataModel =
       GamePieces: IReadOnlyDictionary<GamePieceId, GamePiece>
       Infractions: IReadOnlyDictionary<InfractionId, Infraction>
       Event: struct (FrcEventId * string) }
-    member data.Compress () =
-        use compressorOptions = new CompressionOptions(CompressionOptions.MaxCompressionLevel)
-        use compressor = new Compressor(compressorOptions)
-        let jsonOptions = JsonSerializerOptions()
-        jsonOptions.WriteIndented <- false
-
-        JsonSerializer.SerializeToUtf8Bytes(data, jsonOptions)
-        |> compressor.Wrap
-        |> function
-            | data when data.Length > 2953 -> data |> DataTooLarge |> Error
-            | data -> data |> Ok
-    static member Decompress (compressedData: byte[]) =
-        use decompressor = new Decompressor()
-
-        compressedData
-        |> decompressor.Unwrap
-        |> JsonSerializer.Deserialize<ScoutingDataModel>
-
+      
 type CompleteDataModel =
     {
         ScoutingData: ScoutingDataModel

@@ -16,6 +16,7 @@ module Note =
         | Created of noteId: NoteId * note: Note
         | TextChanged of noteId: NoteId * text: string
         | Deleted of noteId: NoteId
+        | UserDeleted of userId: UserId
 
     module Event =
         let evolve notes event =
@@ -25,6 +26,13 @@ module Note =
             | Created(id, note) -> notes |> Map.add id note
             | TextChanged(id, text) -> edit text |> Option.map |> change id
             | Deleted id -> Map.remove id notes
+            | UserDeleted userId ->
+                // Get all the note ids for the user
+                notes
+                |> Map.filter (fun _ note -> note.UserId <> userId)
+                |> Map.keys
+                // Change the user id of each note to the deleted user id
+                |> Seq.fold (fun notes noteId -> notes |> Map.change noteId (Option.map(setUserId UserId.Zero))) notes
 
     type Command =
         | Create of user: UserId * text: string

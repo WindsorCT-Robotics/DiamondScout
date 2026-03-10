@@ -2,23 +2,26 @@ namespace ParagonRobotics.DiamondScout.Common
 
 open System
 open System.Collections.Generic
+open FsToolkit.ErrorHandling
 
 type ParameterValue =
-    | DropdownChoice of string
-    | Text of string
-    | Integral of int
-    | Decimal of double
-    | RadialChoice of string
-    | MultiSelectChoices of string list
+    | DropdownChoice of index: int
+    | Text of content: string
+    | Integral of value: int
+    | Decimal of value: double
+    | RadialChoice of index: int
+    | MultiSelectChoices of indexes: int list
+    | Checkbox of value: bool
 
     member this.Match
         (
-            dropdownAction: Action<string>,
+            dropdownAction: Action<int>,
             textBoxAction: Action<string>,
             integralSpinnerAction: Action<int>,
             decimalSpinnerAction: Action<double>,
-            radialSelectionAction: Action<string>,
-            multiSelectAction: Action<string IReadOnlyList>
+            radialSelectionAction: Action<int>,
+            multiSelectAction: Action<int IReadOnlyList>,
+            checkboxAction: Action<bool>
         ) =
         match this with
         | DropdownChoice choice -> dropdownAction.Invoke(choice)
@@ -27,13 +30,29 @@ type ParameterValue =
         | Decimal d -> decimalSpinnerAction.Invoke(d)
         | RadialChoice choice -> radialSelectionAction.Invoke(choice)
         | MultiSelectChoices choices -> multiSelectAction.Invoke(choices)
+        | Checkbox b -> checkboxAction.Invoke(b)
 
-type RobotParameters =
-    { Robot: RobotId
-      Parameters: Map<ParameterDefinitionId, ParameterValue> }
+type RobotParameters = { ParameterValues: Map<RobotId, Map<ParameterDefinitionId, ParameterValue>> }
 
 [<RequireQualifiedAccess>]
-module Parameter =
+module ParameterValue =
+    type Event =
+        | ParameterValueAdded of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId * parameterValue: ParameterValue
+        | ParameterValueChanged of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId * parameterValue: ParameterValue
+        | ParameterValueRemoved of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId * parameterValue: ParameterValue
+        // External Events
+        | ParameterDefinitionAdded of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId * parameterDefinition: ParameterDefinition
+        | ParameterDefinitionChanged of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId * parameterDefinition: ParameterDefinition
+        | ParameterDefinitionRemoved of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId
+        | RobotAdded of robotId: RobotId * parameters: Map<ParameterDefinitionId, ParameterValue>
+        | RobotRemoved of robotId: RobotId
+        
+    type Error =
+        | MissingValue of parameterId: ParameterDefinitionId
+        | ValueTypeMismatch of parameterName: string * expected: string
+        | InvalidChoiceIndex of parameterName: string * index: int
+        | InvalidChoiceIndexes of parameterName: string * indexes: int list
+
     let defaultValue (def: ParameterDefinition) : ParameterValue =
         match def.Spec with
         | Dropdown(_, defaultChoice) -> DropdownChoice defaultChoice
@@ -42,84 +61,68 @@ module Parameter =
         | NumericSpinner(DecimalSpinner defaultDouble) -> Decimal defaultDouble
         | RadialSelection(_, defaultChoice) -> RadialChoice defaultChoice
         | MultiSelect(_, defaultChoices) -> MultiSelectChoices defaultChoices
+        | ParameterSpec.Checkbox defaultValue -> Checkbox defaultValue
 
-    let createForRobot (robotId: RobotId) (defs: (ParameterDefinitionId * ParameterDefinition) list) : RobotParameters =
-        let parameters = defs |> List.map (fun (id, d) -> id, defaultValue d) |> Map.ofList
+    module Validation =
+        let private ok value = Validation.ok value
+        let private error err = Validation.error err
 
-        { Robot = robotId
-          Parameters = parameters }
+        let parameterExists id parameters =
+            match Map.tryFind id parameters with
+            | Some value -> ok value
+            | None -> id |> MissingValue |> error
 
-    let private validateOne (def: ParameterDefinition) (value: ParameterValue) : string list =
-        let bad msg =
-            [ $"Parameter '{def.Name}' invalid: {msg}" ]
-
-        match def.Spec, value with
-        | Dropdown(options, _), DropdownChoice choice when List.contains choice options -> []
-        | Dropdown(options, _), DropdownChoice choice ->
-            let joinWithCommas (xs: string list) = String.concat ", " xs
-            bad $"'{choice}' is not one of [{joinWithCommas options}]"
-        | Dropdown _, _ -> bad "value type mismatch (expected DropdownChoice)"
-
-        | TextBox _, Text _ -> []
-
-        | TextBox _, _ -> bad "value type mismatch (expected Text)"
-
-        | NumericSpinner(IntegralSpinner _), Integral _ -> []
-        | NumericSpinner(DecimalSpinner _), Decimal _ -> []
-        | NumericSpinner _, _ -> bad "value type mismatch (expected Integral or Decimal to match spinner type)"
-
-        | RadialSelection(options, _), RadialChoice choice when List.contains choice options -> []
-        | RadialSelection(options, _), RadialChoice choice ->
-            let joinWithCommas (xs: string list) = String.concat ", " xs
-            bad $"'{choice}' is not one of [{joinWithCommas options}]"
-        | RadialSelection _, _ -> bad "value type mismatch (expected RadialChoice)"
-
-        | MultiSelect(options, _), MultiSelectChoices choices ->
-            let invalid = choices |> List.filter (fun c -> not (List.contains c options))
-            let joinWithCommas (xs: string list) = String.concat ", " xs
-
-            if List.isEmpty invalid then
-                []
+        let private indexInRange def options index =
+            if index >= 0 && index < List.length options then
+                ok index
             else
-                bad $"contains invalid selections [{joinWithCommas invalid}]"
-        | MultiSelect _, _ -> bad "value type mismatch (expected MultiSelectChoices)"
+                error (InvalidChoiceIndex(def.Name, index))
 
-    let validate
-        (defs: (ParameterDefinitionId * ParameterDefinition) list)
-        (values: RobotParameters)
-        : Result<RobotParameters, string list> =
+        let private indexesInRange def options indexes =
+            let invalidIndexes =
+                indexes
+                |> List.filter (fun index -> index < 0 || index >= List.length options)
 
-        let defIds = defs |> List.map fst |> Set.ofList
-        let valueIds = values.Parameters |> Map.keys |> Set.ofSeq
+            match invalidIndexes with
+            | [] -> ok indexes
+            | xs -> error (InvalidChoiceIndexes(def.Name, xs))
 
-        let missing =
-            Set.difference defIds valueIds
-            |> Set.toList
-            |> List.map (fun pid -> $"Missing value for ParameterId {pid}")
+        let valueMatchesSpec (def: ParameterDefinition) (value: ParameterValue) =
+            match def.Spec, value with
+            | Dropdown(options, _), DropdownChoice choice ->
+                indexInRange def options choice |> Validation.map (fun _ -> value)
 
-        let invalid =
-            defs
-            |> List.collect (fun (id, def) ->
-                match Map.tryFind id values.Parameters with
-                | None -> []
-                | Some v -> validateOne def v)
+            | Dropdown _, _ ->
+                error (ValueTypeMismatch(def.Name, "DropdownChoice"))
 
-        match missing @ invalid with
-        | [] -> Ok values
-        | errs -> Error errs
+            | TextBox _, Text _ ->
+                ok value
 
-    let withDefaultsFilled
-        (defs: (ParameterDefinitionId * ParameterDefinition) list)
-        (values: RobotParameters)
-        : RobotParameters =
-        let updatedParameters =
-            defs
-            |> List.fold
-                (fun acc (id, def) ->
-                    match Map.containsKey id acc with
-                    | true -> acc
-                    | false -> Map.add id (defaultValue def) acc)
-                values.Parameters
+            | TextBox _, _ ->
+                error (ValueTypeMismatch(def.Name, "Text"))
 
-        { values with
-            Parameters = updatedParameters }
+            | NumericSpinner(IntegralSpinner _), Integral _ ->
+                ok value
+
+            | NumericSpinner(DecimalSpinner _), Decimal _ ->
+                ok value
+
+            | NumericSpinner(IntegralSpinner _), _ ->
+                error (ValueTypeMismatch(def.Name, "Integral"))
+
+            | NumericSpinner(DecimalSpinner _), _ ->
+                error (ValueTypeMismatch(def.Name, "Decimal"))
+
+            | RadialSelection(options, _), RadialChoice choice ->
+                indexInRange def options choice |> Validation.map (fun _ -> value)
+
+            | RadialSelection _, _ ->
+                error (ValueTypeMismatch(def.Name, "RadialChoice"))
+
+            | MultiSelect(options, _), MultiSelectChoices choices ->
+                indexesInRange def options choices |> Validation.map (fun _ -> value)
+
+            | MultiSelect _, _ ->
+                error (ValueTypeMismatch(def.Name, "MultiSelectChoices"))
+            | ParameterSpec.Checkbox _, Checkbox _ -> ok value
+            | ParameterSpec.Checkbox _, _ -> error (ValueTypeMismatch(def.Name, "Checkbox"))

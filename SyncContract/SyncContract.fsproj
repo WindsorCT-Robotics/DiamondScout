@@ -12,6 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Compile Include="Serialization.fs" />
       <Compile Include="ToScoutingDevice.fs" />
     </ItemGroup>
 
