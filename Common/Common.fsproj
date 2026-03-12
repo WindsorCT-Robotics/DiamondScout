@@ -12,9 +12,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ValidationExtensions.fs" />
     <Compile Include="Identifiers.fs" />
-    <Compile Include="EventStream.fs" />
+    <Compile Include="AggregateDefinition.fs" />
     <Compile Include="User.fs" />
+    <Compile Include="UserDirectory.fs" />
     <Compile Include="Note.fs" />
     <Compile Include="Teams.fs" />
     <Compile Include="Scoring.fs" />

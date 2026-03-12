@@ -1,81 +1,41 @@
 namespace ParagonRobotics.DiamondScout.Common
 
 open FsToolkit.ErrorHandling
-open FsToolkit.ErrorHandling.Operator.Validation
-open ParagonRobotics.DiamondScout.Common.DomainEvents
 
-type Note = { UserId: UserId; Text: string }
+[<Struct>]
+type NoteContent = NoteContent of string
 
 [<RequireQualifiedAccess>]
 module Note =
-    let create userId text = { UserId = userId; Text = text }
-    let setUserId userId note = { note with UserId = userId }
-    let edit text note = { note with Text = text }
-
-    type Event =
-        | Created of noteId: NoteId * note: Note
-        | TextChanged of noteId: NoteId * text: string
-        | Deleted of noteId: NoteId
-        | UserDeleted of userId: UserId
-
-    module Event =
-        let evolve notes event =
-            let change id f = notes |> Map.change id f
-
-            match event with
-            | Created(id, note) -> notes |> Map.add id note
-            | TextChanged(id, text) -> edit text |> Option.map |> change id
-            | Deleted id -> Map.remove id notes
-            | UserDeleted userId ->
-                // Get all the note ids for the user
-                notes
-                |> Map.filter (fun _ note -> note.UserId <> userId)
-                |> Map.keys
-                // Change the user id of each note to the deleted user id
-                |> Seq.fold (fun notes noteId -> notes |> Map.change noteId (Option.map(setUserId UserId.Zero))) notes
-
-    type Command =
-        | Create of user: UserId * text: string
-        | Edit of noteId: NoteId * text: string
-        | Delete of noteId: NoteId
-
     type Error =
         | InvalidUserId of user: UserId
         | EmptyText
-        | NoteDoesNotExist of noteId: NoteId
 
     module Validation =
-        let noteExists noteId notes =
-            match Map.tryFind noteId notes with
-            | Some note -> Validation.ok note
-            | None -> noteId |> NoteDoesNotExist |> Validation.error
+        let userIdValid userId =
+            match userId = UserId.Zero with
+            | true -> userId |> InvalidUserId |> Validation.error 
+            | false -> Validation.ok userId
 
-        let userIdValid note =
-            match note.UserId = UserId.Zero with
-            | true -> Validation.error (InvalidUserId note.UserId)
-            | false -> Validation.ok note
-
-        let textNotEmpty note =
-            match System.String.IsNullOrWhiteSpace note.Text with
+        let textNotEmpty (NoteContent text) =
+            match System.String.IsNullOrWhiteSpace text with
             | true -> Validation.error EmptyText
-            | false -> Validation.ok note
+            | false -> text |> NoteContent|> Validation.ok 
 
-    module Command =
-        let decide command notes =
-            match command with
-            | Create(user, text) ->
-                let noteId = System.Guid.NewGuid() |> NoteId
+type Note = private {
+    UserId: UserId
+    Text: NoteContent
+} with
+  static member Create userId text =
+        validation {
+            let! userId = Note.Validation.userIdValid userId
+            and! text = Note.Validation.textNotEmpty text
+            
+            return { UserId = userId; Text = text }
+        }
+  member this.Edit text = validation {
+        let! text = Note.Validation.textNotEmpty text
+        
+        return { this with Text = text }
+    }
 
-                create user text
-                |> Validation.userIdValid
-                >>= Validation.textNotEmpty
-                |> Validation.map (fun note -> [ Created(noteId, note) ])
-            | Edit(id, text) ->
-                Validation.noteExists id notes
-                |> Validation.map (edit text)
-                >>= Validation.textNotEmpty
-                |> Validation.map (fun note -> [ TextChanged(id, note.Text) ])
-            | Delete id -> Validation.noteExists id notes |> Validation.map (fun _ -> [ Deleted id ])
-
-    let eventStream =
-        EventStream.create Map.empty<NoteId, Note> Event.evolve Command.decide

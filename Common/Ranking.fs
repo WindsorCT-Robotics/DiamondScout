@@ -1,5 +1,7 @@
 namespace ParagonRobotics.DiamondScout.Common
 
+open System
+
 /// Represents FIRST Robotics Competition ranking points.
 [<Struct>]
 type RankingPoints =
@@ -17,6 +19,10 @@ type RankingPointsThreshold =
     | PointsThreshold of Points
     /// Creates a <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/> based on scoring the specified number of times, regardless of point value.
     | ScoreThreshold of uint
+    member this.Match (pointsThresholdAction: Action<Points>, scoreThresholdAction: Action<uint>) =
+        match this with
+        | PointsThreshold points -> pointsThresholdAction.Invoke points
+        | ScoreThreshold score -> scoreThresholdAction.Invoke score
 
 /// The number of <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPoints"/> a team receives for meeting the specified <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/>.
 type RankingPointGrant =
@@ -26,12 +32,6 @@ type RankingPointGrant =
         /// <summary>The <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/> criteria.</summary>
         Threshold: RankingPointsThreshold
     }
-
-    static member Create value threshold =
-        { Value = value; Threshold = threshold }
-
-    member this.ChangeValue value = { this with Value = value }
-    member this.ChangeRankingPointThreshold threshold = { this with Threshold = threshold }
 
 [<RequireQualifiedAccess>]
 module Ranking =

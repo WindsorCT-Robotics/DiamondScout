@@ -7,11 +7,11 @@ type GamePiece =
       PhaseScore: SubPhaseMap<ScoreValue>
       RankPoints: RankingPointGrant list }
 
-    static member Create name (values: IReadOnlyDictionary<SubPhaseId, ScoreValue>) rankPoints =
+    static member Create name (values: IReadOnlyDictionary<SubPhase, ScoreValue>) rankPoints =
         { Name = name
           PhaseScore =
             match values with
-            | :? Map<SubPhaseId, ScoreValue> as m -> m
+            | :? Map<SubPhase, ScoreValue> as m -> m
             | d -> d |> Seq.map (|KeyValue|) |> Map.ofSeq
           RankPoints = rankPoints }
 
@@ -33,13 +33,3 @@ module GamePiece =
             GamePiece.PhaseScore = value }
 
     let changeRankPoints piece rp = { piece with RankPoints = rp }
-
-    type Event =
-        | GamePieceDefined of gamePieceId: GamePieceId * gamePiece: GamePiece
-        | NameChanged of gamePieceId: GamePieceId * newName: string
-        | RankPointGrantAdded of gamePieceId: GamePieceId * grant: RankingPointGrant
-        | RankPointGrantRemoved of gamePieceId: GamePieceId * grant: RankingPointGrant
-        | ValueChanged of gamePieceId: GamePieceId * key: SubPhaseId * value: ScoreValue
-        | ValueAdded of gamePieceId: GamePieceId * key: SubPhaseId * value: ScoreValue
-        | ValueRemoved of gamePieceId: GamePieceId * key: SubPhaseId
-        | GamePieceRemoved of gamePieceId: GamePieceId

@@ -1,7 +1,6 @@
 namespace ParagonRobotics.DiamondScout.SyncContract.ToScoutingDevice
 
 // TODO: Consider loading all day's match data into scouting tablet in a single scan if data will fit
-// TODO: Consider separating loading of match data from game data to minimize QR code size
 
 open System.Collections.Generic
 open ParagonRobotics.DiamondScout.Common

@@ -2,6 +2,12 @@ namespace ParagonRobotics.DiamondScout.Common
 
 open System
 
+[<Struct>]
+type PhaseName = PhaseName of string
+
+[<Struct>]
+type PhaseDescription = PhaseDescription of string
+
 type Phase =
     | Autonomous
     | Teleop
@@ -14,38 +20,23 @@ type Phase =
         | Endgame -> endgameAction.Invoke()
 
 type SubPhase =
-    { Name: string
-      Description: string
-      Phase: Phase }
-
-    static member Create phase desc name =
-        { Name = name
-          Description = desc
-          Phase = phase }
-
-    member this.ChangeName name = { this with Name = name }
-    member this.ChangeDescription desc = { this with Description = desc }
-    member this.ChangePhase phase = { this with Phase = phase }
-
-type SubPhaseMap<'T> = Map<SubPhaseId, 'T>
+    { Name: PhaseName
+      Description: PhaseDescription
+      ParentPhase: Phase }
+    
+type SubPhaseMap<'T> = Map<SubPhase, 'T>
 
 [<RequireQualifiedAccess>]
 module SubPhase =
     let create phase desc name =
         { Name = name
           Description = desc
-          Phase = phase }
+          ParentPhase = phase }
 
-    let changeName subPhase name = { subPhase with SubPhase.Name = name }
+    let changeName name subPhase = { subPhase with SubPhase.Name = name }
 
-    let changeDescription subPhase desc =
+    let changeDescription desc subPhase =
         { subPhase with
             SubPhase.Description = desc }
 
-    let changePhase subPhase phase = { subPhase with Phase = phase }
-
-    type Event =
-        | AddPhase of subPhaseId: SubPhaseId * phase: SubPhase
-        | NameChanged of subPhaseId: SubPhaseId * newName: string
-        | DescriptionChanged of subPhaseId: SubPhaseId * newDescription: string
-        | DeletePhase of subPhaseId: SubPhaseId
+    let changePhase subPhase phase = { subPhase with ParentPhase = phase }
