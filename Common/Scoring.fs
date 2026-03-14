@@ -47,7 +47,7 @@ type ScoreValue =
 type Score = private Score of (ScoringTier -> Points)
 
 [<RequireQualifiedAccess>]
-module Score =
+module internal Score =
     let getPoints tier (Score score) : Points = score tier
 
     let compile (rule: ScoreValue) : Score =

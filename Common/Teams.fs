@@ -25,7 +25,7 @@ type TeamData =
         /// The team's name.
         TeamName: TeamName
         /// Notes about the team.
-        Notes: Map<NoteId, Note>
+        Notes: Notes
     }
 
 [<RequireQualifiedAccess>]
@@ -64,7 +64,7 @@ module Team =
                 | Team.Unregistered ->
                     { TeamNumber = teamNumber
                       TeamName = teamName
-                      Notes = Map.empty }
+                      Notes = Notes.Empty }
                     |> Team.Registered
                 | Team.Registered _ as team -> team
             | TeamNameChanged teamName ->
@@ -73,17 +73,11 @@ module Team =
                 | Team.Unregistered as team -> team
             | NoteAdded(noteId, userId, noteContent) ->
                 match team with
-                | Team.Registered data ->
-                    { data with
-                        Notes = Map.add noteId (Note.Create userId noteContent) data.Notes }
-                    |> Team.Registered
+                | Team.Registered data -> { data with Notes = data.Notes.Add(noteId, Note.Create userId noteContent) } |> Team.Registered
                 | Team.Unregistered as team -> team
             | NoteRemoved noteId ->
                 match team with
-                | Team.Registered data ->
-                    { data with
-                        Notes = Map.remove noteId data.Notes }
-                    |> Team.Registered
+                | Team.Registered data -> { data with Notes = data.Notes.Remove noteId } |> Team.Registered
                 | Team.Unregistered as team -> team
 
     [<RequireQualifiedAccess>]
@@ -104,12 +98,12 @@ module Team =
             | false -> name |> TeamName |> Validation.ok
 
         let noteIdUnique data id =
-            match Map.containsKey id data.Notes with
+            match data.Notes.ContainsKey id with
             | true -> id |> DuplicateNote |> Validation.error
             | false -> id |> Validation.ok
 
         let noteExists data id =
-            match Map.containsKey id data.Notes with
+            match data.Notes.ContainsKey id with
             | true -> id |> Validation.ok
             | false -> id |> NoteNotFound |> Validation.error
 

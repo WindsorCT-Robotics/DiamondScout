@@ -12,13 +12,14 @@ type RankingPoints =
     /// Represents zero ranking points.
     static member Zero = RankingPoints 0u
     static member (+)(RankingPoints left, RankingPoints right) = left + right |> RankingPoints
+    member this.Value = let (RankingPoints rankingPoints) = this in rankingPoints
 
 /// The requirements for a team to receive ranking points.
 type RankingPointsThreshold =
     /// Creates a <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/> based on scoring the specified number of <see cref="T:ParagonRobotics.DiamondScout.Common.Scoring.Points"/>.
-    | PointsThreshold of Points
+    | PointsThreshold of threshold: Points
     /// Creates a <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/> based on scoring the specified number of times, regardless of point value.
-    | ScoreThreshold of uint
+    | ScoreThreshold of threshold: uint
 
     member this.Match(pointsThresholdAction: Action<Points>, scoreThresholdAction: Action<uint>) =
         match this with
@@ -42,6 +43,10 @@ module Ranking =
     let changeValue value rankingPointGrant =
         { rankingPointGrant with Value = value }
 
-    let changeRankingPointThreshold threshold rankingPointGrant =
+    let changeThreshold threshold rankingPointGrant =
         { rankingPointGrant with
             Threshold = threshold }
+
+type RankingPointGrant with
+    member this.ChangeValue value = Ranking.changeValue value this
+    member this.ChangeThreshold threshold = Ranking.changeThreshold threshold this

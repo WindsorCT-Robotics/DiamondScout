@@ -7,17 +7,10 @@ type GamePiece =
       PhaseScore: SubPhaseMap<ScoreValue>
       RankPoints: RankingPointGrant list }
 
-    static member Create name (values: IReadOnlyDictionary<SubPhase, ScoreValue>) rankPoints =
+    static member Create name values rankPoints =
         { Name = name
-          PhaseScore =
-            match values with
-            | :? Map<SubPhase, ScoreValue> as m -> m
-            | d -> d |> Seq.map (|KeyValue|) |> Map.ofSeq
+          PhaseScore = values
           RankPoints = rankPoints }
-
-    member this.ChangeName name = { this with Name = name }
-    member this.ChangeValue value = { this with PhaseScore = value }
-    member this.ChangeRankPoints rp = { this with RankPoints = rp }
 
 [<RequireQualifiedAccess>]
 module GamePiece =
@@ -26,10 +19,15 @@ module GamePiece =
           PhaseScore = values
           RankPoints = rankPoints }
 
-    let changeName piece name = { piece with GamePiece.Name = name }
+    let changeName name piece = { piece with GamePiece.Name = name }
 
-    let changeValue piece value =
+    let changeValue value piece =
         { piece with
             GamePiece.PhaseScore = value }
 
-    let changeRankPoints piece rp = { piece with RankPoints = rp }
+    let changeRankPoints rp piece = { piece with RankPoints = rp }
+
+type GamePiece with
+    member this.ChangeName name = GamePiece.changeName name this
+    member this.ChangeValue value = GamePiece.changeValue value this
+    member this.ChangeRankPoints rp = GamePiece.changeRankPoints rp this

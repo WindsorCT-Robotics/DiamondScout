@@ -36,60 +36,33 @@ type EndgameCapable =
 type Robot =
     { Name: string
       Team: TeamId
-      Game: GameId
       EndgameCapable: EndgameCapable
       Drivetrain: Drivetrain
-      Notes: Note list }
-
-    static member Create name team game scoringTier drivetrain =
-        { Name = name
-          Team = team
-          Game = game
-          EndgameCapable = TierCapability scoringTier
-          Drivetrain = drivetrain
-          Notes = [] }
-
-    member this.AssociateTeam team = { this with Team = team }
-    member this.AssociateGame game = { this with Game = game }
-
-    member this.SetEndgameCapabilities endgameCapability =
-        { this with
-            EndgameCapable = endgameCapability }
-
-    member this.SetDrivetrain drivetrain = { this with Drivetrain = drivetrain }
-
-    member this.AddNote note =
-        { this with Notes = note :: this.Notes }
+      Notes: Notes }
 
 [<RequireQualifiedAccess>]
 module Robot =
-    let create name team game scoringTier drivetrain =
+    let create name team scoringTier drivetrain =
         { Name = name
           Team = team
-          Game = game
           EndgameCapable = TierCapability scoringTier
           Drivetrain = drivetrain
-          Notes = [] }
+          Notes = Notes.Empty }
 
-    let associateTeam robot team = { robot with Team = team }
-    let associateGame robot game = { robot with Game = game }
-
-    let setEndgameCapabilities robot endgameCapability =
+    let withEndgameCapabilities endgameCapability robot =
         { robot with
             EndgameCapable = endgameCapability }
 
-    let setDrivetrain robot drivetrain = { robot with Drivetrain = drivetrain }
+    let withDrivetrain drivetrain robot = { robot with Drivetrain = drivetrain }
 
-    let addNote robot note =
+    let addNote noteId userId noteContents robot =
         { robot with
-            Robot.Notes = note :: robot.Notes }
-
-    type Event =
-        | RobotAdded of robotId: RobotId * robot: Robot
-        | TeamAssociated of robotId: RobotId * teamId: TeamId
-        | GameAssociated of robotId: RobotId * gameId: GameId
-        | EndgameCapabilitiesUpdated of robotId: RobotId * endgameCapability: EndgameCapable
-        | DrivetrainUpdated of robotId: RobotId * drivetrain: Drivetrain
-        | NoteAdded of robotId: RobotId * note: Note
-        | NoteRemoved of robotId: RobotId * noteId: NoteId
-        | RobotRemoved of robotId: RobotId
+            Robot.Notes = robot.Notes.Add(noteId, Note.Create userId noteContents) }
+        
+    let removeNote noteId robot = { robot with Robot.Notes = robot.Notes.Remove(noteId) }
+    
+type Robot with
+    static member Create name team scoringTier drivetrain = Robot.create name team scoringTier drivetrain
+    member this.ChangeEndgameCapabilities endgameCapability = Robot.withEndgameCapabilities endgameCapability this
+    member this.ChangeDrivetrain drivetrain = Robot.withDrivetrain drivetrain this
+    member this.AddNote noteId userId noteContents = Robot.addNote noteId userId noteContents this 

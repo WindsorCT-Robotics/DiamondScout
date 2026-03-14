@@ -37,3 +37,21 @@ type NoteId =
     static member Zero = NoteId Guid.Empty
     static member Create() = Guid.CreateVersion7() |> NoteId
     member this.Value = let (NoteId guid) = this in guid
+
+[<Struct>]
+type SubPhaseId =
+    private
+    | SubPhaseId of Guid
+    
+    static member Zero = SubPhaseId Guid.Empty
+    static member Create() = Guid.CreateVersion7() |> SubPhaseId
+    member this.Value = let (SubPhaseId guid) = this in guid
+    
+[<Struct>]
+type InfractionId =
+    private
+    | InfractionId of Guid
+    
+    static member Zero = InfractionId Guid.Empty
+    static member Create() = Guid.CreateVersion7() |> InfractionId
+    member this.Value = let (InfractionId guid) = this in guid

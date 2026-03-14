@@ -64,23 +64,21 @@ type ScoreRecord =
           Phase = phase }
 
 type ScoutingResults =
-    { Game: GameId
-      Match: MatchId
+    { 
       Team: TeamId
       Alliance: Alliance
       Scores: ScoreRecord list
       Endgame: Endgame
       Breakdowns: Breakdown list
-      Infractions: InfractionId list
+      Infractions: Infractions
       GamePoints: Points option // Add the ability to manually enter score
       RankingPoints: RankingPoints option
-      Notes: NoteId list }
+      Notes: Notes }
 
 [<RequireQualifiedAccess>]
 module ScoutingResults =
     let createScoutingResult game frcMatch team alliance endgameCapability =
-        { Game = game
-          Match = frcMatch
+        { 
           Team = team
           Alliance = alliance
           Scores = []
@@ -88,7 +86,7 @@ module ScoutingResults =
             { Capable = endgameCapability
               Result = EndgameResult.NotAttempted }
           Breakdowns = []
-          Infractions = []
+          Infractions = Infractions.Empty
           GamePoints = None
           RankingPoints = None
           Notes = [] }
@@ -105,9 +103,9 @@ module ScoutingResults =
         { matchData with
             Breakdowns = breakdownData :: matchData.Breakdowns }
 
-    let foul infractionData matchData =
+    let foul infractionId infractionData matchData =
         { matchData with
-            Infractions = infractionData :: matchData.Infractions }
+            Infractions = matchData.Infractions.Add (infractionId, infractionData) }
 
     let endgame endgameData matchData =
         { matchData with
