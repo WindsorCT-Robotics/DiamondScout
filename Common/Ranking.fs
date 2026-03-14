@@ -19,7 +19,8 @@ type RankingPointsThreshold =
     | PointsThreshold of Points
     /// Creates a <see cref="T:ParagonRobotics.DiamondScout.Common.Ranking.RankingPointsThreshold"/> based on scoring the specified number of times, regardless of point value.
     | ScoreThreshold of uint
-    member this.Match (pointsThresholdAction: Action<Points>, scoreThresholdAction: Action<uint>) =
+
+    member this.Match(pointsThresholdAction: Action<Points>, scoreThresholdAction: Action<uint>) =
         match this with
         | PointsThreshold points -> pointsThresholdAction.Invoke points
         | ScoreThreshold score -> scoreThresholdAction.Invoke score

@@ -32,21 +32,37 @@ type ParameterValue =
         | MultiSelectChoices choices -> multiSelectAction.Invoke(choices)
         | Checkbox b -> checkboxAction.Invoke(b)
 
-type RobotParameters = { ParameterValues: Map<RobotId, Map<ParameterDefinitionId, ParameterValue>> }
+type RobotParameters =
+    { ParameterValues: Map<RobotId, Map<ParameterDefinitionId, ParameterValue>> }
 
 [<RequireQualifiedAccess>]
 module ParameterValue =
     type Event =
-        | ParameterValueAdded of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId * parameterValue: ParameterValue
-        | ParameterValueChanged of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId * parameterValue: ParameterValue
-        | ParameterValueRemoved of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId * parameterValue: ParameterValue
+        | ParameterValueAdded of
+            robotId: RobotId *
+            parameterDefinitionId: ParameterDefinitionId *
+            parameterValue: ParameterValue
+        | ParameterValueChanged of
+            robotId: RobotId *
+            parameterDefinitionId: ParameterDefinitionId *
+            parameterValue: ParameterValue
+        | ParameterValueRemoved of
+            robotId: RobotId *
+            parameterDefinitionId: ParameterDefinitionId *
+            parameterValue: ParameterValue
         // External Events
-        | ParameterDefinitionAdded of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId * parameterDefinition: ParameterDefinition
-        | ParameterDefinitionChanged of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId * parameterDefinition: ParameterDefinition
+        | ParameterDefinitionAdded of
+            robotId: RobotId *
+            parameterDefinitionId: ParameterDefinitionId *
+            parameterDefinition: ParameterDefinition
+        | ParameterDefinitionChanged of
+            robotId: RobotId *
+            parameterDefinitionId: ParameterDefinitionId *
+            parameterDefinition: ParameterDefinition
         | ParameterDefinitionRemoved of robotId: RobotId * parameterDefinitionId: ParameterDefinitionId
         | RobotAdded of robotId: RobotId * parameters: Map<ParameterDefinitionId, ParameterValue>
         | RobotRemoved of robotId: RobotId
-        
+
     type Error =
         | MissingValue of parameterId: ParameterDefinitionId
         | ValueTypeMismatch of parameterName: string * expected: string
@@ -80,8 +96,7 @@ module ParameterValue =
 
         let private indexesInRange def options indexes =
             let invalidIndexes =
-                indexes
-                |> List.filter (fun index -> index < 0 || index >= List.length options)
+                indexes |> List.filter (fun index -> index < 0 || index >= List.length options)
 
             match invalidIndexes with
             | [] -> ok indexes
@@ -92,37 +107,28 @@ module ParameterValue =
             | Dropdown(options, _), DropdownChoice choice ->
                 indexInRange def options choice |> Validation.map (fun _ -> value)
 
-            | Dropdown _, _ ->
-                error (ValueTypeMismatch(def.Name, "DropdownChoice"))
+            | Dropdown _, _ -> error (ValueTypeMismatch(def.Name, "DropdownChoice"))
 
-            | TextBox _, Text _ ->
-                ok value
+            | TextBox _, Text _ -> ok value
 
-            | TextBox _, _ ->
-                error (ValueTypeMismatch(def.Name, "Text"))
+            | TextBox _, _ -> error (ValueTypeMismatch(def.Name, "Text"))
 
-            | NumericSpinner(IntegralSpinner _), Integral _ ->
-                ok value
+            | NumericSpinner(IntegralSpinner _), Integral _ -> ok value
 
-            | NumericSpinner(DecimalSpinner _), Decimal _ ->
-                ok value
+            | NumericSpinner(DecimalSpinner _), Decimal _ -> ok value
 
-            | NumericSpinner(IntegralSpinner _), _ ->
-                error (ValueTypeMismatch(def.Name, "Integral"))
+            | NumericSpinner(IntegralSpinner _), _ -> error (ValueTypeMismatch(def.Name, "Integral"))
 
-            | NumericSpinner(DecimalSpinner _), _ ->
-                error (ValueTypeMismatch(def.Name, "Decimal"))
+            | NumericSpinner(DecimalSpinner _), _ -> error (ValueTypeMismatch(def.Name, "Decimal"))
 
             | RadialSelection(options, _), RadialChoice choice ->
                 indexInRange def options choice |> Validation.map (fun _ -> value)
 
-            | RadialSelection _, _ ->
-                error (ValueTypeMismatch(def.Name, "RadialChoice"))
+            | RadialSelection _, _ -> error (ValueTypeMismatch(def.Name, "RadialChoice"))
 
             | MultiSelect(options, _), MultiSelectChoices choices ->
                 indexesInRange def options choices |> Validation.map (fun _ -> value)
 
-            | MultiSelect _, _ ->
-                error (ValueTypeMismatch(def.Name, "MultiSelectChoices"))
+            | MultiSelect _, _ -> error (ValueTypeMismatch(def.Name, "MultiSelectChoices"))
             | ParameterSpec.Checkbox _, Checkbox _ -> ok value
             | ParameterSpec.Checkbox _, _ -> error (ValueTypeMismatch(def.Name, "Checkbox"))

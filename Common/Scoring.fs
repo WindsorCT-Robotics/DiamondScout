@@ -8,12 +8,13 @@ type TierLevel = TierLevel of uint
 
 /// Defines a scoring tier.
 [<Struct>]
-type ScoringTier = {
-    /// The name of the scoring tier.
-    Name: TierName
-    /// The level of the scoring tier.
-    Level: TierLevel
-}
+type ScoringTier =
+    {
+        /// The name of the scoring tier.
+        Name: TierName
+        /// The level of the scoring tier.
+        Level: TierLevel
+    }
 
 type QualitativeScoring =
     | Poor

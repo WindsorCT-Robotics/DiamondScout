@@ -11,38 +11,33 @@ type ScoutedTeam =
       Robot: struct (RobotId * Robot)
       ScoutingParameters: IReadOnlyDictionary<ParameterDefinitionId, struct (ParameterDefinition * ParameterValue)>
       ScoutResults: ScoutingResults }
-      
+
 type ScoutedMatch =
-    {
-        MatchNumber: MatchNumber
-        Teams: IReadOnlyDictionary<TeamId, ScoutedTeam>
-    }
+    { MatchNumber: MatchNumber
+      Teams: IReadOnlyDictionary<TeamId, ScoutedTeam> }
 
 type ScoutingDataModel =
     { GameName: string
-      Users: IReadOnlyDictionary<UserId, User>
+      Users: IReadOnlyDictionary<UserId, UserData>
       Parameters: RobotParameters IReadOnlyCollection
       Phases: IReadOnlyDictionary<SubPhaseId, SubPhase>
       GamePieces: IReadOnlyDictionary<GamePieceId, GamePiece>
       Infractions: IReadOnlyDictionary<InfractionId, Infraction>
       Event: struct (FrcEventId * string) }
-      
+
 type CompleteDataModel =
-    {
-        ScoutingData: ScoutingDataModel
-        Match: ScoutedMatch
-    }
-      
-type EventStores = {
-    UserStore: IEventStore<User.Event>
-    NoteStore: IEventStore<Note.Event>
-    TeamStore: IEventStore<Team.Event>
-    PhaseStore: IEventStore<SubPhase.Event>
-    GamePieceStore: IEventStore<GamePiece.Event>
-    InfractionStore: IEventStore<Infraction.Event>
-    RobotParameterDefinitionStore: IEventStore<ParameterDefinition.Event>
-    RobotParameterStore: IEventStore<ParameterValue.Event>
-    RobotStore: IEventStore<Robot.Event>
-    MatchStore: IEventStore<Match.Event>
-    EventsStore: IEventStore<FrcEvent.Event>
-}
+    { ScoutingData: ScoutingDataModel
+      Match: ScoutedMatch }
+
+type EventStores =
+    { UserStore: IEventStore<UserData.Event>
+      NoteStore: IEventStore<Note.Event>
+      TeamStore: IEventStore<Team.Event>
+      PhaseStore: IEventStore<SubPhase.Event>
+      GamePieceStore: IEventStore<GamePiece.Event>
+      InfractionStore: IEventStore<Infraction.Event>
+      RobotParameterDefinitionStore: IEventStore<ParameterDefinition.Event>
+      RobotParameterStore: IEventStore<ParameterValue.Event>
+      RobotStore: IEventStore<Robot.Event>
+      MatchStore: IEventStore<Match.Event>
+      EventsStore: IEventStore<FrcEvent.Event> }

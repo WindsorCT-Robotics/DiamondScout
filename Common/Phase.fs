@@ -23,7 +23,7 @@ type SubPhase =
     { Name: PhaseName
       Description: PhaseDescription
       ParentPhase: Phase }
-    
+
 type SubPhaseMap<'T> = Map<SubPhase, 'T>
 
 [<RequireQualifiedAccess>]

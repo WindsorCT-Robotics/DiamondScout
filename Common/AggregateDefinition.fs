@@ -6,13 +6,14 @@ type Evolve<'state, 'event> = 'state -> 'event -> 'state
 type Decide<'state, 'command, 'event, 'error> = 'command -> 'state -> Validation<'event list, 'error>
 
 type AggregateDefinition<'state, 'command, 'event, 'error> =
-    { Init: 'state
-      Evolve: Evolve<'state, 'event>
-      Decide: Decide<'state, 'command, 'event, 'error> }
+    internal
+        { Init: 'state
+          Evolve: Evolve<'state, 'event>
+          Decide: Decide<'state, 'command, 'event, 'error> }
 
 [<RequireQualifiedAccess>]
 module AggregateDefinition =
-    let create initialState evolver decider =
+    let internal create initialState evolver decider =
         { Init = initialState
           Evolve = evolver
           Decide = decider }

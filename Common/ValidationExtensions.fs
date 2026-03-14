@@ -9,4 +9,3 @@ module ResultExtensions =
         match result with
         | Ok ok -> actionOk.Invoke(ok)
         | Error err -> actionErr.Invoke(err)
-
