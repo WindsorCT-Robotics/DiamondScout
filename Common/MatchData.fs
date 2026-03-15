@@ -49,13 +49,3 @@ module Match =
             MatchScoutResults.RedAlliance.Team3 = scoutingResultsId }
 
     let setWinner winner matchData = { matchData with Winner = Some winner }
-
-    type Event =
-        | MatchAdded of frcMatchId: MatchId * frcMatch: Match
-        | Blue1Scouted of frcMatchId: MatchId * scoutingResultsId: ScoutingResultsId
-        | Blue2Scouted of frcMatchId: MatchId * scoutingResultsId: ScoutingResultsId
-        | Blue3Scouted of frcMatchId: MatchId * scoutingResultsId: ScoutingResultsId
-        | Red1Scouted of frcMatchId: MatchId * scoutingResultsId: ScoutingResultsId
-        | Red2Scouted of frcMatchId: MatchId * scoutingResultsId: ScoutingResultsId
-        | Red3Scouted of frcMatchId: MatchId * scoutingResultsId: ScoutingResultsId
-        | MatchEnded of frcMatchId: MatchId * victor: Alliance
