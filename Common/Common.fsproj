@@ -15,12 +15,14 @@
     <Compile Include="ValidationExtensions.fs" />
     <Compile Include="Identifiers.fs" />
     <Compile Include="AggregateDefinition.fs" />
+    <Compile Include="Projection.fs" />
     <Compile Include="User.fs" />
     <Compile Include="UserDirectory.fs" />
     <Compile Include="Note.fs" />
     <Compile Include="Teams.fs" />
+    <Compile Include="TeamRegistry.fs" />
     <Compile Include="Scoring.fs" />
-    <Compile Include="Ranking.fs" />
+    <Compile Include="RankingPoints.fs" />
     <Compile Include="Phase.fs" />
     <Compile Include="GamePieces.fs" />
     <Compile Include="Infractions.fs" />
@@ -28,6 +30,8 @@
     <Compile Include="ScoutingResults.fs" />
     <Compile Include="MatchData.fs" />
     <Compile Include="FrcEvent.fs" />
+    <Compile Include="FrcDistrict.fs" />
+    <Compile Include="RobotRanking.fs" />
     <Compile Include="ParameterDefinition.fs" />
     <Compile Include="ParameterValue.fs" />
     <Compile Include="GameData.fs" />

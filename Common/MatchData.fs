@@ -3,49 +3,59 @@ namespace ParagonRobotics.DiamondScout.Common
 [<Struct>]
 type MatchNumber = MatchNumber of uint
 
+type WinningAlliance =
+    | Undecided
+    | Winner of winningAlliance: Alliance
+
 type AllianceScoutingResults =
-    { Team1: ScoutingResultsId option
-      Team2: ScoutingResultsId option
-      Team3: ScoutingResultsId option }
+    { Team1: ScoutingResults
+      Team2: ScoutingResults
+      Team3: ScoutingResults }
 
 type MatchScoutingResults =
     { RedAlliance: AllianceScoutingResults
       BlueAlliance: AllianceScoutingResults }
 
+type AllianceTeamNumber =
+    | Team1
+    | Team2
+    | Team3
+
+type AllianceTeam = AllianceTeam of Alliance * AllianceTeamNumber
+
 type Match =
     { MatchNumber: MatchNumber
       MatchScoutResults: MatchScoutingResults
-      Winner: Alliance option }
+      Winner: WinningAlliance }
 
 [<RequireQualifiedAccess>]
 module Match =
     let createMatch matchNumber matchScoutResults =
         { MatchNumber = matchNumber
           MatchScoutResults = matchScoutResults
-          Winner = None }
+          Winner = Undecided }
 
-    let updateBlue1ScoutResults scoutingResultsId matchData =
+    let scoutAllianceTeam (AllianceTeam(alliance, team)) results matchData =
+        match (alliance, team) with
+        | Red, Team1 ->
+            { matchData with
+                MatchScoutResults.RedAlliance.Team1 = results }
+        | Red, Team2 ->
+            { matchData with
+                MatchScoutResults.RedAlliance.Team2 = results }
+        | Red, Team3 ->
+            { matchData with
+                MatchScoutResults.RedAlliance.Team3 = results }
+        | Blue, Team1 ->
+            { matchData with
+                MatchScoutResults.BlueAlliance.Team1 = results }
+        | Blue, Team2 ->
+            { matchData with
+                MatchScoutResults.BlueAlliance.Team2 = results }
+        | Blue, Team3 ->
+            { matchData with
+                MatchScoutResults.BlueAlliance.Team3 = results }
+
+    let setWinner winner matchData =
         { matchData with
-            MatchScoutResults.BlueAlliance.Team1 = scoutingResultsId }
-
-    let updateBlue2ScoutResults scoutingResultsId matchData =
-        { matchData with
-            MatchScoutResults.BlueAlliance.Team2 = scoutingResultsId }
-
-    let updateBlue3ScoutResults scoutingResultsId matchData =
-        { matchData with
-            MatchScoutResults.BlueAlliance.Team3 = scoutingResultsId }
-
-    let updateRed1ScoutResults scoutingResultsId matchData =
-        { matchData with
-            MatchScoutResults.RedAlliance.Team1 = scoutingResultsId }
-
-    let updateRed2ScoutResults scoutingResultsId matchData =
-        { matchData with
-            MatchScoutResults.RedAlliance.Team2 = scoutingResultsId }
-
-    let updateRed3ScoutResults scoutingResultsId matchData =
-        { matchData with
-            MatchScoutResults.RedAlliance.Team3 = scoutingResultsId }
-
-    let setWinner winner matchData = { matchData with Winner = Some winner }
+            Winner = WinningAlliance.Winner winner }

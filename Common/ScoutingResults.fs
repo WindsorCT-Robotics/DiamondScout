@@ -2,7 +2,6 @@ namespace ParagonRobotics.DiamondScout.Common
 
 open System
 open System.Collections.Generic
-open System.Linq
 
 [<Struct>]
 type Alliance =
@@ -66,8 +65,7 @@ type ScoreRecord =
           Phase = phase }
 
 type ScoutingResults =
-    { 
-      Team: TeamId
+    { Team: TeamId
       Alliance: Alliance
       Scores: ScoreRecord IReadOnlyList
       Endgame: Endgame
@@ -78,8 +76,7 @@ type ScoutingResults =
 [<RequireQualifiedAccess>]
 module ScoutingResults =
     let create team alliance endgameCapability =
-        { 
-          Team = team
+        { Team = team
           Alliance = alliance
           Scores = []
           Endgame =
@@ -93,6 +90,7 @@ module ScoutingResults =
         { matchData with
             Scores =
                 let newScore = ScoreRecord.create gamePiece tier phase
+
                 match matchData.Scores with
                 | :? list<ScoreRecord> as scores -> scores @ [ newScore ]
                 | scores -> scores |> List.ofSeq |> List.append [ newScore ] }
@@ -106,7 +104,7 @@ module ScoutingResults =
 
     let recordInfraction infractionId infractionData matchData =
         { matchData with
-            Infractions = matchData.Infractions.Add (infractionId, infractionData) }
+            Infractions = matchData.Infractions.Add(infractionId, infractionData) }
 
     let recordEndgame endgameData matchData =
         { matchData with
@@ -114,14 +112,31 @@ module ScoutingResults =
 
     let addNote noteId note matchData =
         { matchData with
-              ScoutingResults.Notes = matchData.Notes.Add (noteId, note) }
+            ScoutingResults.Notes = matchData.Notes.Add(noteId, note) }
+
+    let removeNote noteId matchData =
+        { matchData with
+            ScoutingResults.Notes = matchData.Notes.Remove noteId }
 
 type ScoutingResults with
-   member this.HasBreakdown breakdown =
-        match this.Breakdowns with
-        | :? list<Breakdown> as breakdowns -> breakdowns |> List.exists ((=) breakdown)
-        | breakdowns -> breakdowns.Contains breakdown
-    (* let tally victoryReward winningAlliance (matchData: ScoutingResults) : ScoutingResults =
+    member this.RecordScore phase gamePiece tier =
+        ScoutingResults.recordScore phase gamePiece tier this
+
+    member this.RecordBreakdown breakdown =
+        ScoutingResults.recordBreakdown breakdown this
+
+    member this.RecordInfraction infractionId infractionData =
+        ScoutingResults.recordInfraction infractionId infractionData this
+
+    member this.RecordEndgame endgameData =
+        ScoutingResults.recordEndgame endgameData this
+
+    member this.AddNote noteId note =
+        ScoutingResults.addNote noteId note this
+
+    member this.RemoveNote noteId = ScoutingResults.removeNote noteId this
+
+(* let tally victoryReward winningAlliance (matchData: ScoutingResults) : ScoutingResults =
         let gamePieceScores = matchData.Scores |> List.groupBy _.GamePiece |> Map.ofList
 
         let gamePiecePoints =

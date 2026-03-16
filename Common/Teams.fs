@@ -73,11 +73,17 @@ module Team =
                 | Team.Unregistered as team -> team
             | NoteAdded(noteId, userId, noteContent) ->
                 match team with
-                | Team.Registered data -> { data with Notes = data.Notes.Add(noteId, Note.Create userId noteContent) } |> Team.Registered
+                | Team.Registered data ->
+                    { data with
+                        Notes = data.Notes.Add(noteId, Note.Create userId noteContent) }
+                    |> Team.Registered
                 | Team.Unregistered as team -> team
             | NoteRemoved noteId ->
                 match team with
-                | Team.Registered data -> { data with Notes = data.Notes.Remove noteId } |> Team.Registered
+                | Team.Registered data ->
+                    { data with
+                        Notes = data.Notes.Remove noteId }
+                    |> Team.Registered
                 | Team.Unregistered as team -> team
 
     [<RequireQualifiedAccess>]

@@ -58,11 +58,19 @@ module Robot =
     let addNote noteId userId noteContents robot =
         { robot with
             Robot.Notes = robot.Notes.Add(noteId, Note.Create userId noteContents) }
-        
-    let removeNote noteId robot = { robot with Robot.Notes = robot.Notes.Remove(noteId) }
-    
+
+    let removeNote noteId robot =
+        { robot with
+            Robot.Notes = robot.Notes.Remove(noteId) }
+
 type Robot with
-    static member Create name team scoringTier drivetrain = Robot.create name team scoringTier drivetrain
-    member this.ChangeEndgameCapabilities endgameCapability = Robot.withEndgameCapabilities endgameCapability this
+    static member Create name team scoringTier drivetrain =
+        Robot.create name team scoringTier drivetrain
+
+    member this.ChangeEndgameCapabilities endgameCapability =
+        Robot.withEndgameCapabilities endgameCapability this
+
     member this.ChangeDrivetrain drivetrain = Robot.withDrivetrain drivetrain this
-    member this.AddNote noteId userId noteContents = Robot.addNote noteId userId noteContents this 
+
+    member this.AddNote noteId userId noteContents =
+        Robot.addNote noteId userId noteContents this
