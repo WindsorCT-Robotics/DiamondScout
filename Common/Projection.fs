@@ -9,15 +9,12 @@ type Projection<'state, 'event> =
 
 [<RequireQualifiedAccess>]
 module Projection =
-    let internal create initialState apply =
-        { Init = initialState
-          Apply = apply }
+    let internal create initialState apply = { Init = initialState; Apply = apply }
 
-    let foldEvents projection =
-        List.fold projection.Apply
+    let foldEvents projection = List.fold projection.Apply
 
-    let rebuild projection =
-        foldEvents projection projection.Init
+    let rebuild projection = foldEvents projection projection.Init
 
 type Projection<'state, 'event> with
-    static member Project projection 
+    static member Project projection events = Projection.rebuild projection events
+    member this.Update event = Projection.foldEvents this event

@@ -75,9 +75,9 @@ type MatchId =
     member this.Value = let (MatchId guid) = this in guid
 
 [<Struct>]
-type EventId =
-    | EventId of Guid
+type FrcEventId =
+    | FrcEventId of Guid
 
-    static member Zero = EventId Guid.Empty
-    static member Create() = Guid.CreateVersion7() |> EventId
-    member this.Value = let (EventId guid) = this in guid
+    static member Zero = FrcEventId Guid.Empty
+    static member Create() = Guid.CreateVersion7() |> FrcEventId
+    member this.Value = let (FrcEventId guid) = this in guid

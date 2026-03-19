@@ -9,5 +9,5 @@ type RobotRank =
 
 type RobotRankings =
     private
-        { RankByEvent: Map<EventId, RobotRank>
+        { RankByEvent: Map<FrcEventId, RobotRank>
           RankByDistrict: Map<FrcDistrictCode, RobotRank> }

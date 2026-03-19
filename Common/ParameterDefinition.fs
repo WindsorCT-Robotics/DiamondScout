@@ -45,8 +45,11 @@ module ParameterDefinition =
     let changeName name (param: ParameterDefinition) = { param with Name = name }
     let changeSpec spec (param: ParameterDefinition) = { param with Spec = spec }
 
-    type Event =
-        | ParameterCreated of parameterId: ParameterDefinitionId * newParameter: ParameterDefinition
-        | ParameterNameChanged of parameterId: ParameterDefinitionId * newName: string
-        | ParameterSpecChanged of parameterId: ParameterDefinitionId * newSpec: ParameterSpec
-        | ParameterDeleted of parameterId: ParameterDefinitionId
+type ParameterDefinition with
+    static member Create name spec = ParameterDefinition.create name spec
+
+    member this.Rename name =
+        ParameterDefinition.changeName name this
+
+    member this.Modify spec =
+        ParameterDefinition.changeSpec spec this

@@ -1,8 +1,5 @@
 namespace ParagonRobotics.DiamondScout.Common
 
-[<Struct>]
-type District = District of string
-
 type FrcEvent =
     { Name: string
       Matches: MatchId list }
