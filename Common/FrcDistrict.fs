@@ -12,7 +12,7 @@ type FrcDistrictCode =
     static member Create(code: string) =
         match code.Length with
         | 3 -> FrcDistrictCode code
-        | _ -> failwithf "Invalid FRC district code: %s" code
+        | _ -> invalidOp $"Invalid FRC district code: %s{code}"
 
 [<Struct>]
 type FrcDistrictName =

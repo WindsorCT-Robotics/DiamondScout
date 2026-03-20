@@ -3,6 +3,9 @@
 open System
 
 [<Struct>]
+type RobotName = RobotName of string
+
+[<Struct>]
 type Drivetrain =
     | Swerve
     | Mech
@@ -34,7 +37,7 @@ type EndgameCapable =
         | NotCapable -> notCapable.Invoke()
 
 type Robot =
-    { Name: string
+    { Name: RobotName
       Team: TeamId
       EndgameCapable: EndgameCapable
       Drivetrain: Drivetrain

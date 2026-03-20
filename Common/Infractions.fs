@@ -5,6 +5,9 @@ open System.Collections.Generic
 open System.Linq
 
 [<Struct>]
+type InfractionName = InfractionName of string
+
+[<Struct>]
 type Foul =
     | Minor of Penalty: uint
     | Major of Penalty: uint
@@ -25,7 +28,7 @@ type Card =
         | Red -> redAction.Invoke()
 
 type Infraction =
-    { Name: string
+    { Name: InfractionName
       Severity: Foul option
       Card: Card option }
 

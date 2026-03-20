@@ -1,7 +1,10 @@
 namespace ParagonRobotics.DiamondScout.Common
 
+[<Struct>]
+type FrcEventName = FrcEventName of string
+
 type FrcEvent =
-    { Name: string
+    { Name: FrcEventName
       Matches: MatchId list }
 
     static member Create name = { Name = name; Matches = [] }

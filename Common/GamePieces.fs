@@ -1,9 +1,10 @@
 namespace ParagonRobotics.DiamondScout.Common
 
-open System.Collections.Generic
+[<Struct>]
+type GamePieceName = GamePieceName of string
 
 type GamePiece =
-    { Name: string
+    { Name: GamePieceName
       PhaseScore: SubPhaseMap<ScoreValue>
       RankPoints: RankingPointGrant list }
 
