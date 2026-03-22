@@ -1,16 +1,20 @@
 namespace ParagonRobotics.DiamondScout.Common
 
+[<Struct>]
+type TierName = TierName of string
+
+[<Struct>]
+type TierLevel = TierLevel of uint
+
 /// Defines a scoring tier.
 [<Struct>]
 type ScoringTier =
     {
         /// The name of the scoring tier.
-        Name: string
+        Name: TierName
         /// The level of the scoring tier.
-        Level: uint
+        Level: TierLevel
     }
-
-    static member Zero = { Name = "Zero"; Level = 0u }
 
 type QualitativeScoring =
     | Poor
@@ -19,11 +23,11 @@ type QualitativeScoring =
     | AboveAverage
     | Excellent
 
-/// <summary>The number of points a <see cref="T:ParagonRobotics.DiamondScout.Common.Scoring.Score"/> is worth.</summary>
+/// <summary>The number of points a ScoringTier is worth.</summary>
 [<Struct>]
 type Points =
     /// <summary>
-    /// Creates a new <see cref="T:ParagonRobotics.DiamondScout.Common.Scoring.Points"/> instance.
+    /// Creates a new Points instance.
     /// </summary>
     /// <param name="points">The number of points.</param>
     | Points of points: uint
@@ -43,7 +47,7 @@ type ScoreValue =
 type Score = private Score of (ScoringTier -> Points)
 
 [<RequireQualifiedAccess>]
-module Score =
+module internal Score =
     let getPoints tier (Score score) : Points = score tier
 
     let compile (rule: ScoreValue) : Score =

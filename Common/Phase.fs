@@ -1,6 +1,13 @@
 namespace ParagonRobotics.DiamondScout.Common
 
 open System
+open System.Collections.Generic
+
+[<Struct>]
+type PhaseName = PhaseName of string
+
+[<Struct>]
+type PhaseDescription = PhaseDescription of string
 
 type Phase =
     | Autonomous
@@ -14,38 +21,28 @@ type Phase =
         | Endgame -> endgameAction.Invoke()
 
 type SubPhase =
-    { Name: string
-      Description: string
-      Phase: Phase }
+    { Name: PhaseName
+      Description: PhaseDescription
+      ParentPhase: Phase }
 
-    static member Create phase desc name =
-        { Name = name
-          Description = desc
-          Phase = phase }
-
-    member this.ChangeName name = { this with Name = name }
-    member this.ChangeDescription desc = { this with Description = desc }
-    member this.ChangePhase phase = { this with Phase = phase }
-
-type SubPhaseMap<'T> = Map<SubPhaseId, 'T>
+type SubPhaseMap<'T> = IReadOnlyDictionary<SubPhase, 'T>
 
 [<RequireQualifiedAccess>]
 module SubPhase =
     let create phase desc name =
         { Name = name
           Description = desc
-          Phase = phase }
+          ParentPhase = phase }
 
-    let changeName subPhase name = { subPhase with SubPhase.Name = name }
+    let changeName name subPhase = { subPhase with SubPhase.Name = name }
 
-    let changeDescription subPhase desc =
+    let changeDescription desc subPhase =
         { subPhase with
             SubPhase.Description = desc }
 
-    let changePhase subPhase phase = { subPhase with Phase = phase }
+    let changePhase phase subPhase = { subPhase with ParentPhase = phase }
 
-    type Event =
-        | AddPhase of subPhaseId: SubPhaseId * phase: SubPhase
-        | NameChanged of subPhaseId: SubPhaseId * newName: string
-        | DescriptionChanged of subPhaseId: SubPhaseId * newDescription: string
-        | DeletePhase of subPhaseId: SubPhaseId
+type SubPhase with
+    member this.ChangeName name = SubPhase.changeName name this
+    member this.ChangeDescription desc = SubPhase.changeDescription desc this
+    member this.ChangePhase phase = SubPhase.changePhase phase this

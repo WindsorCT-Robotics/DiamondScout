@@ -2,9 +2,12 @@ namespace ParagonRobotics.DiamondScout.Common
 
 open System
 open FsToolkit.ErrorHandling
-open FsToolkit.ErrorHandling.Operator.Validation
 open ParagonRobotics.DiamondScout.Common.DomainEvents
 
+[<Struct>]
+type UserName = UserName of string
+
+[<Struct>]
 type Role =
     | Admin
     | Viewer
@@ -16,132 +19,120 @@ type Role =
         | Viewer -> isViewer.Invoke()
         | Scouter -> isScouter.Invoke()
 
-type User =
-    { Name: string
-      Role: Role
-      IsActive: bool }
+type UserData =
+    { Name: UserName
+      Role: Role }
+
+    static member Zero = { Name = UserName ""; Role = Viewer }
 
     member this.IsAdmin = this.Role = Admin
     member this.IsScouter = this.Role = Scouter
     member this.IsViewer = this.Role = Viewer
 
 [<RequireQualifiedAccess>]
-module User =
+type User =
+    private
+    | Empty
+    | Inactive of UserData
+    | Active of UserData
+
+    member this.Match(isEmpty: Action, isInactive: Action<UserData>, isActive: Action<UserData>) =
+        match this with
+        | Empty -> isEmpty.Invoke()
+        | Inactive data -> isInactive.Invoke(data)
+        | Active data -> isActive.Invoke(data)
+
+[<RequireQualifiedAccess>]
+module UserData =
     let isAdmin user = user.Role = Admin
     let isScouter user = user.Role = Scouter
     let isViewer user = user.Role = Viewer
-    let isAuthenticated (user: User option) = user.IsSome
-    let isAnonymous (user: User option) = not (isAuthenticated user)
-    let setRole role user = { user with Role = role }
-    let setName name user = { user with Name = name }
-    let deactivate user = { user with IsActive = false }
-    let activate user = { user with IsActive = true }
+    let private setRole role user = { user with Role = role }
+    let private setName name user = { user with Name = name }
 
-    let create name role =
-        { Name = name
-          Role = role
-          IsActive = true }
+    let private create name role =
+        { Name = name; Role = role } |> User.Active
 
     type Event =
-        | UserCreated of userId: UserId * user: User
-        | NameChanged of userId: UserId * newName: string
-        | RoleChanged of userId: UserId * newRole: Role
-        | Deactivated of userId: UserId
-        | Activated of userId: UserId
-        | Deleted of userId: UserId
+        private
+        | Registered of name: UserName * role: Role
+        | NameChanged of newName: UserName
+        | RoleChanged of newRole: Role
+        | Deactivated
 
-    module Event =
-        let evolve users event =
-            let change userId f =
-                users |> Map.change userId (Option.map f)
-
+    module private Event =
+        let evolve user event =
             match event with
-            | UserCreated(userId, user) -> users |> Map.add userId user
-            | NameChanged(userId, name) -> change userId (setName name)
-            | RoleChanged(userId, role) -> change userId (setRole role)
-            | Deactivated userId -> change userId deactivate
-            | Activated userId -> change userId activate
-            | Deleted userId -> users |> Map.remove userId
+            | Registered(userName, role) -> create userName role
+            | NameChanged name ->
+                match user with
+                | User.Empty -> User.Empty
+                | User.Inactive data -> data |> setName name |> User.Inactive
+                | User.Active data -> data |> setName name |> User.Active
+            | RoleChanged role ->
+                match user with
+                | User.Empty -> User.Empty
+                | User.Inactive data -> data |> setRole role |> User.Inactive
+                | User.Active data -> data |> setRole role |> User.Active
+            | Deactivated ->
+                match user with
+                | User.Empty -> User.Empty
+                | User.Inactive _ as user -> user
+                | User.Active user -> user |> User.Inactive
 
     type Command =
-        | Create of name: string * role: Role
-        | ChangeName of userId: UserId * newName: string
-        | ChangeRole of userId: UserId * newRole: Role
-        | Deactivate of userId: UserId
-        | Activate of userId: UserId
-        | Delete of userId: UserId
+        | Register of name: UserName * role: Role
+        | ChangeName of newName: UserName
+        | ChangeRole of newRole: Role
+        | Deactivate
 
     type Error =
+        | UserNotCreated
         | NameNotProvided
         | RoleNotProvided
         | UserAlreadyDeactivated
-        | UserAlreadyActivated
-        | DuplicateName of userId: UserId
-        | UserNotFound of userId: UserId
-
-    module Validation =
-        let nameNotTaken (users: Map<UserId, User>) user =
-            match users |> Map.tryFindKey (fun _ u -> u.Name = user.Name) with
-            | Some id -> id |> DuplicateName |> Validation.error
-            | None -> Validation.ok user
-
-        let userExists (users: Map<UserId, User>) userId =
-            match users |> Map.tryFind userId with
-            | Some user -> Validation.ok user
-            | None -> userId |> UserNotFound |> Validation.error
-
-        let nameNotEmpty user =
-            match String.IsNullOrWhiteSpace user.Name with
-            | true -> Validation.error NameNotProvided
-            | false -> Validation.ok user
-
-        let roleNotNull user =
-            match Object.ReferenceEquals(user.Role, null) with
-            | true -> Validation.error RoleNotProvided
-            | false -> Validation.ok user
-
-        let userNotDeactivated (user: User) =
-            match user.IsActive with
-            | true -> Validation.ok user
-            | false -> Validation.error UserAlreadyDeactivated
-
-        let userNotActivated (user: User) =
-            match user.IsActive with
-            | true -> Validation.error UserAlreadyActivated
-            | false -> Validation.ok user
 
     [<RequireQualifiedAccess>]
-    module Command =
-        let decide command users =
+    module private OnlyIf =
+        let nameNotEmpty (UserName name) =
+            match String.IsNullOrWhiteSpace name with
+            | true -> Validation.error NameNotProvided
+            | false -> name |> UserName |> Validation.ok
+
+        let userNotDeactivated user =
+            match user with
+            | User.Empty -> Validation.error UserNotCreated
+            | User.Inactive _ -> Validation.error UserAlreadyDeactivated
+            | User.Active _ -> Validation.ok user
+
+        let userNotActivated user =
+            match user with
+            | User.Empty -> Validation.error UserNotCreated
+            | User.Inactive _ -> Validation.ok user
+            | User.Active _ -> Validation.error UserAlreadyDeactivated
+
+    [<RequireQualifiedAccess>]
+    module private Command =
+        let decide command user =
             match command with
-            | Create(name, role) ->
-                let userId = Guid.NewGuid() |> UserId
+            | Register(name, role) ->
+                validation {
+                    let! name = name |> OnlyIf.nameNotEmpty
 
-                create name role
-                |> Validation.nameNotEmpty
-                >>= Validation.nameNotTaken users
-                >>= Validation.roleNotNull
-                >>= Validation.userNotDeactivated
-                |> Validation.map (fun user -> [ UserCreated(userId, user) ])
-            | ChangeRole(id, newRole) ->
-                Validation.userExists users id
-                |> Validation.map (setRole newRole)
-                >>= Validation.roleNotNull
-                |> Validation.map (fun user -> [ RoleChanged(id, user.Role) ])
-            | Deactivate id ->
-                Validation.userExists users id
-                >>= Validation.userNotDeactivated
-                |> Validation.map (fun _ -> [ Deactivated id ])
-            | Activate id ->
-                Validation.userExists users id
-                >>= Validation.userNotActivated
-                |> Validation.map (fun _ -> [ Activated id ])
-            | ChangeName(id, newName) ->
-                Validation.userExists users id
-                |> Validation.map (setName newName)
-                >>= Validation.nameNotEmpty
-                |> Validation.map (fun user -> [ NameChanged(id, user.Name) ])
-            | Delete id -> Validation.userExists users id |> Validation.map (fun _ -> [ Deleted id ])
+                    return (name, role) |> Registered |> List.singleton
+                }
+            | ChangeRole role -> role |> RoleChanged |> List.singleton |> Validation.ok
+            | Deactivate ->
+                validation {
+                    let! _ = OnlyIf.userNotDeactivated user
 
-    let userEventStream =
-        EventStream.create Map.empty<UserId, User> Event.evolve Command.decide
+                    return Deactivated |> List.singleton
+                }
+            | ChangeName newName ->
+                validation {
+                    let! name = newName |> OnlyIf.nameNotEmpty
+
+                    return name |> NameChanged |> List.singleton
+                }
+
+    let definition = AggregateDefinition.create User.Empty Event.evolve Command.decide

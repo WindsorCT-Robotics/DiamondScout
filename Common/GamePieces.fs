@@ -1,23 +1,17 @@
 namespace ParagonRobotics.DiamondScout.Common
 
-open System.Collections.Generic
+[<Struct>]
+type GamePieceName = GamePieceName of string
 
 type GamePiece =
-    { Name: string
+    { Name: GamePieceName
       PhaseScore: SubPhaseMap<ScoreValue>
       RankPoints: RankingPointGrant list }
 
-    static member Create name (values: IReadOnlyDictionary<SubPhaseId, ScoreValue>) rankPoints =
+    static member Create name values rankPoints =
         { Name = name
-          PhaseScore =
-            match values with
-            | :? Map<SubPhaseId, ScoreValue> as m -> m
-            | d -> d |> Seq.map (|KeyValue|) |> Map.ofSeq
+          PhaseScore = values
           RankPoints = rankPoints }
-
-    member this.ChangeName name = { this with Name = name }
-    member this.ChangeValue value = { this with PhaseScore = value }
-    member this.ChangeRankPoints rp = { this with RankPoints = rp }
 
 [<RequireQualifiedAccess>]
 module GamePiece =
@@ -26,20 +20,15 @@ module GamePiece =
           PhaseScore = values
           RankPoints = rankPoints }
 
-    let changeName piece name = { piece with GamePiece.Name = name }
+    let changeName name piece = { piece with GamePiece.Name = name }
 
-    let changeValue piece value =
+    let changeValue value piece =
         { piece with
             GamePiece.PhaseScore = value }
 
-    let changeRankPoints piece rp = { piece with RankPoints = rp }
+    let changeRankPoints rp piece = { piece with RankPoints = rp }
 
-    type Event =
-        | GamePieceDefined of gamePieceId: GamePieceId * gamePiece: GamePiece
-        | NameChanged of gamePieceId: GamePieceId * newName: string
-        | RankPointGrantAdded of gamePieceId: GamePieceId * grant: RankingPointGrant
-        | RankPointGrantRemoved of gamePieceId: GamePieceId * grant: RankingPointGrant
-        | ValueChanged of gamePieceId: GamePieceId * key: SubPhaseId * value: ScoreValue
-        | ValueAdded of gamePieceId: GamePieceId * key: SubPhaseId * value: ScoreValue
-        | ValueRemoved of gamePieceId: GamePieceId * key: SubPhaseId
-        | GamePieceRemoved of gamePieceId: GamePieceId
+type GamePiece with
+    member this.ChangeName name = GamePiece.changeName name this
+    member this.ChangeValue value = GamePiece.changeValue value this
+    member this.ChangeRankPoints rp = GamePiece.changeRankPoints rp this

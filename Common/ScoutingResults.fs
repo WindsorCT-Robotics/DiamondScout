@@ -1,6 +1,7 @@
 namespace ParagonRobotics.DiamondScout.Common
 
 open System
+open System.Collections.Generic
 
 [<Struct>]
 type Alliance =
@@ -64,56 +65,78 @@ type ScoreRecord =
           Phase = phase }
 
 type ScoutingResults =
-    { Game: GameId
-      Match: MatchId
-      Team: TeamId
+    { Team: TeamId
       Alliance: Alliance
-      Scores: ScoreRecord list
+      Scores: ScoreRecord IReadOnlyList
       Endgame: Endgame
-      Breakdowns: Breakdown list
-      Infractions: InfractionId list
-      GamePoints: Points option
-      RankingPoints: RankingPoints option
-      Notes: NoteId list }
+      Breakdowns: Breakdown IReadOnlyList
+      Infractions: Infractions
+      Notes: Notes }
 
 [<RequireQualifiedAccess>]
 module ScoutingResults =
-    let createScoutingResult game frcMatch team alliance endgameCapability =
-        { Game = game
-          Match = frcMatch
-          Team = team
+    let create team alliance endgameCapability =
+        { Team = team
           Alliance = alliance
           Scores = []
           Endgame =
             { Capable = endgameCapability
               Result = EndgameResult.NotAttempted }
           Breakdowns = []
-          Infractions = []
-          GamePoints = None
-          RankingPoints = None
-          Notes = [] }
+          Infractions = Infractions.Empty
+          Notes = Notes.Empty }
 
-    let score phase gamePiece tier matchData =
+    let recordScore phase gamePiece tier matchData =
         { matchData with
             Scores =
-                { GamePiece = gamePiece
-                  Tier = tier
-                  Phase = phase }
-                :: matchData.Scores }
+                let newScore = ScoreRecord.create gamePiece tier phase
 
-    let breakdown breakdownData matchData =
+                match matchData.Scores with
+                | :? list<ScoreRecord> as scores -> scores @ [ newScore ]
+                | scores -> scores |> List.ofSeq |> List.append [ newScore ] }
+
+    let recordBreakdown breakdownData matchData =
         { matchData with
-            Breakdowns = breakdownData :: matchData.Breakdowns }
+            Breakdowns =
+                match matchData.Breakdowns with
+                | :? list<Breakdown> as breakdowns -> breakdowns @ [ breakdownData ]
+                | breakdowns -> breakdowns |> List.ofSeq |> List.append [ breakdownData ] }
 
-    let foul infractionData matchData =
+    let recordInfraction infractionId infractionData matchData =
         { matchData with
-            Infractions = infractionData :: matchData.Infractions }
+            Infractions = matchData.Infractions.Add(infractionId, infractionData) }
 
-    let endgame endgameData matchData =
+    let recordEndgame endgameData matchData =
         { matchData with
             ScoutingResults.Endgame.Result = endgameData }
 
-    let tally victoryReward winningAlliance (matchData: ScoutingResults) : ScoutingResults =
+    let addNote noteId note matchData =
+        { matchData with
+            ScoutingResults.Notes = matchData.Notes.Add(noteId, note) }
+
+    let removeNote noteId matchData =
+        { matchData with
+            ScoutingResults.Notes = matchData.Notes.Remove noteId }
+
+type ScoutingResults with
+    member this.RecordScore phase gamePiece tier =
+        ScoutingResults.recordScore phase gamePiece tier this
+
+    member this.RecordBreakdown breakdown =
+        ScoutingResults.recordBreakdown breakdown this
+
+    member this.RecordInfraction infractionId infractionData =
+        ScoutingResults.recordInfraction infractionId infractionData this
+
+    member this.RecordEndgame endgameData =
+        ScoutingResults.recordEndgame endgameData this
+
+    member this.AddNote noteId note =
+        ScoutingResults.addNote noteId note this
+
+    member this.RemoveNote noteId = ScoutingResults.removeNote noteId this
+
+(* let tally victoryReward winningAlliance (matchData: ScoutingResults) : ScoutingResults =
         let gamePieceScores = matchData.Scores |> List.groupBy _.GamePiece |> Map.ofList
 
         let gamePiecePoints =
@@ -160,13 +183,4 @@ module ScoutingResults =
 
     let addNote note matchData =
         { matchData with
-            ScoutingResults.Notes = note :: matchData.Notes }
-
-    type Event =
-        | Created of resultId: ScoutingResultsId * scoutingResults: ScoutingResults
-        | Scored of resultId: ScoutingResultsId * scoreRecord: ScoreRecord
-        | BrokenDown of resultId: ScoutingResultsId * breakdown: Breakdown
-        | Fouled of resultId: ScoutingResultsId * infraction: InfractionId
-        | MatchEnded of resultId: ScoutingResultsId * endgame: Endgame * victor: Alliance * victoryReward: RankingPoints
-        | NoteAdded of resultId: ScoutingResultsId * note: NoteId
-        | Deleted of resultId: ScoutingResultsId
+            ScoutingResults.Notes = note :: matchData.Notes } *)

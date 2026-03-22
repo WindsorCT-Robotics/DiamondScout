@@ -2,80 +2,73 @@ namespace ParagonRobotics.DiamondScout.Common
 
 open System
 
+[<Struct>]
+type GameName = GameName of string
+
 type Game =
-    { Year: DateOnly
-      Name: string
-      Phases: SubPhaseId list
-      GamePieces: GamePieceId list
-      Infractions: InfractionId list
-      PitResults: RobotId list
-      Events: FrcEventId list
-      Parameters: ParameterDefinitionId list }
+    private
+        { Year: DateOnly
+          Name: GameName
+          FrcDistricts: Map<FrcDistrictCode, FrcDistrict>
+          SubPhases: Map<SubPhaseId, SubPhase>
+          GamePieces: Map<GamePieceId, GamePiece>
+          Infractions: Map<InfractionId, Infraction>
+          PitResults: Map<RobotId, Robot>
+          ParameterDefinitions: Map<ParameterDefinitionId, ParameterDefinition>
+          Parameters: Map<RobotId, Map<ParameterDefinitionId, ParameterValue>> }
+
+[<RequireQualifiedAccess>]
+type private GameState =
+    | GameNotStarted
+    | GameStarted of Game
 
 [<RequireQualifiedAccess>]
 module Game =
-    let setYear year game = { game with Year = year }
-    let setName name game = { game with Game.Name = name }
+    module EventArgs =
+        type GameStarted = { Name: GameName; Year: DateOnly }
+        type ChangeGameName = { Name: GameName }
+        type ChangeYear = { Year: DateOnly }
 
-    let addPhase phase game =
-        { game with
-            Phases = phase :: game.Phases }
+        type RegisterDistrict =
+            { DistrictCode: FrcDistrictCode
+              DistrictName: FrcDistrictName }
 
-    let removePhase phase game =
-        { game with
-            Phases = game.Phases |> List.filter (not << (=) phase) }
+        type ChangeDistrictName =
+            { DistrictCode: FrcDistrictCode
+              DistrictName: FrcDistrictName }
 
-    let addGamePiece gamePiece game =
-        { game with
-            GamePieces = gamePiece :: game.GamePieces }
+        type RegisterEvent =
+            { DistrictCode: FrcDistrictCode
+              EventId: FrcEventId
+              EventName: FrcEventName }
 
-    let removeGamePiece gamePiece game =
-        { game with
-            GamePieces = game.GamePieces |> List.filter (not << (=) gamePiece) }
+        type ChangeEventName =
+            { DistrictCode: FrcDistrictCode
+              EventId: FrcEventId
+              EventName: FrcEventName }
 
-    let addInfraction infraction game =
-        { game with
-            Game.Infractions = infraction :: game.Infractions }
-
-    let removeInfraction infraction game =
-        { game with
-            Game.Infractions = game.Infractions |> List.filter (not << (=) infraction) }
-
-    let addPitResult pitResult game =
-        { game with
-            PitResults = pitResult :: game.PitResults }
-
-    let removePitResult pitResult game =
-        { game with
-            PitResults = game.PitResults |> List.filter (not << (=) pitResult) }
-
-    let addFrcEvent event game =
-        { game with
-            Events = event :: game.Events }
-
-    let removeFrcEvent event game =
-        { game with
-            Events = game.Events |> List.filter (not << (=) event) }
-
-    let addParameter parameter game =
-        { game with
-            Game.Parameters = parameter :: game.Parameters }
-
-    let removeParameter parameter game =
-        { game with
-            Game.Parameters = game.Parameters |> List.filter (not << (=) parameter) }
+        type ScoutMatch =
+            { DistrictCode: FrcDistrictCode
+              EventId: FrcEventId
+              MatchNumber: MatchNumber
+              Team: AllianceTeam
+              Result: ScoutingResults }
 
     type Event =
-        | GameCreated of gameId: GameId * game: Game
-        | SubPhaseCreated of gameId: GameId * subPhaseId: SubPhaseId
-        | SubPhaseDeleted of gameId: GameId * subPhaseId: SubPhaseId
-        | GamePieceCreated of gameId: GameId * gamePieceId: GamePieceId
-        | GamePieceDeleted of gameId: GameId * gamePieceId: GamePieceId
-        | InfractionCreated of gameId: GameId * infractionId: InfractionId
-        | InfractionDeleted of gameId: GameId * infractionId: InfractionId
-        | PitResultCreated of gameId: GameId * pitResultId: RobotId
-        | PitResultDeleted of gameId: GameId * pitResultId: RobotId
-        | ParameterDefinitionCreated of gameId: GameId * parameterDefinitionId: ParameterDefinitionId
-        | ParameterDefinitionDeleted of gameId: GameId * parameterDefinitionId: ParameterDefinitionId
-        | FrcEventCreated of gameId: GameId * frcEventId: FrcEventId
-        | FrcEventDeleted of gameId: GameId * frcEventId: FrcEventId
+        private
+        | GameStarted of name: GameName * year: DateOnly
+        | ChangeGameName of name: GameName
+        | ChangeYear of year: DateOnly
+        | RegisterDistrict of districtCode: FrcDistrictCode * districtName: FrcDistrictName
+        | ChangeDistrictName of districtCode: FrcDistrictCode * districtName: FrcDistrictName
+        | RegisterEvent of districtCode: FrcDistrictCode * eventId: FrcEventId * eventName: FrcEventName
+        | ChangeEventName of districtCode: FrcDistrictCode * eventId: FrcEventId * eventName: FrcEventName
+        | ScoutMatch of
+            districtCode: FrcDistrictCode *
+            eventId: FrcEventId *
+            matchNumber: MatchNumber *
+            team: AllianceTeam *
+            result: ScoutingResults
+        | DefineSubPhase of subPhaseId: SubPhaseId * subPhase: SubPhase
+        | DefineGamePiece of gamePieceId: GamePieceId * gamePiece: GamePiece
+        | DefineInfraction of infractionId: InfractionId * infraction: Infraction

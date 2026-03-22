@@ -1,73 +1,79 @@
 namespace ParagonRobotics.DiamondScout.Common
 
+open System.Linq
+open System.Collections.Generic
 open FsToolkit.ErrorHandling
-open FsToolkit.ErrorHandling.Operator.Validation
-open ParagonRobotics.DiamondScout.Common.DomainEvents
 
-type Note = { UserId: UserId; Text: string }
+[<Struct>]
+type NoteContent = NoteContent of string
 
 [<RequireQualifiedAccess>]
 module Note =
-    let create userId text = { UserId = userId; Text = text }
-    let setUserId userId note = { note with UserId = userId }
-    let edit text note = { note with Text = text }
-
-    type Event =
-        | Created of noteId: NoteId * note: Note
-        | TextChanged of noteId: NoteId * text: string
-        | Deleted of noteId: NoteId
-
-    module Event =
-        let evolve notes event =
-            let change id f = notes |> Map.change id f
-
-            match event with
-            | Created(id, note) -> notes |> Map.add id note
-            | TextChanged(id, text) -> edit text |> Option.map |> change id
-            | Deleted id -> Map.remove id notes
-
-    type Command =
-        | Create of user: UserId * text: string
-        | Edit of noteId: NoteId * text: string
-        | Delete of noteId: NoteId
-
     type Error =
         | InvalidUserId of user: UserId
         | EmptyText
-        | NoteDoesNotExist of noteId: NoteId
 
-    module Validation =
-        let noteExists noteId notes =
-            match Map.tryFind noteId notes with
-            | Some note -> Validation.ok note
-            | None -> noteId |> NoteDoesNotExist |> Validation.error
+    [<RequireQualifiedAccess>]
+    module internal OnlyIf =
+        let userIdValid userId =
+            match userId = UserId.Zero with
+            | true -> userId |> InvalidUserId |> Validation.error
+            | false -> Validation.ok userId
 
-        let userIdValid note =
-            match note.UserId = UserId.Zero with
-            | true -> Validation.error (InvalidUserId note.UserId)
-            | false -> Validation.ok note
-
-        let textNotEmpty note =
-            match System.String.IsNullOrWhiteSpace note.Text with
+        let textNotEmpty (NoteContent text) =
+            match System.String.IsNullOrWhiteSpace text with
             | true -> Validation.error EmptyText
-            | false -> Validation.ok note
+            | false -> text |> NoteContent |> Validation.ok
 
-    module Command =
-        let decide command notes =
-            match command with
-            | Create(user, text) ->
-                let noteId = System.Guid.NewGuid() |> NoteId
+type Note =
+    private
+        { UserId: UserId
+          Text: NoteContent }
 
-                create user text
-                |> Validation.userIdValid
-                >>= Validation.textNotEmpty
-                |> Validation.map (fun note -> [ Created(noteId, note) ])
-            | Edit(id, text) ->
-                Validation.noteExists id notes
-                |> Validation.map (edit text)
-                >>= Validation.textNotEmpty
-                |> Validation.map (fun note -> [ TextChanged(id, note.Text) ])
-            | Delete id -> Validation.noteExists id notes |> Validation.map (fun _ -> [ Deleted id ])
+    static member TryCreate userId text =
+        validation {
+            let! userId = Note.OnlyIf.userIdValid userId
+            and! text = Note.OnlyIf.textNotEmpty text
 
-    let eventStream =
-        EventStream.create Map.empty<NoteId, Note> Event.evolve Command.decide
+            return { UserId = userId; Text = text }
+        }
+
+    static member Create userId text =
+        Note.TryCreate userId text
+        |> Result.defaultWith (fun e -> $" Unable to create note: {e}" |> invalidOp)
+
+    member this.Edit text =
+        validation {
+            let! text = Note.OnlyIf.textNotEmpty text
+
+            return { this with Text = text }
+        }
+
+[<RequireQualifiedAccess>]
+[<Struct>]
+type Notes =
+    | Notes of notes: IReadOnlyDictionary<NoteId, Note>
+
+    static member Empty = Map.empty<NoteId, Note> :> IReadOnlyDictionary<NoteId, Note> |> Notes
+
+    static member internal AsMap(notes: IReadOnlyDictionary<NoteId, Note>) =
+        match notes with
+        | :? Map<NoteId, Note> as map -> map
+        | map -> map.Select (|KeyValue|) |> Map.ofSeq
+
+    member internal this.AsMap() =
+        let (Notes notes) = this
+        Notes.AsMap notes
+
+    // Store incoming type as a Map internally, regardless of the underlying input type
+    static member Create(notes: IReadOnlyDictionary<NoteId, Note>) =
+        Notes.AsMap notes :> IReadOnlyDictionary<NoteId, Note> |> Notes
+
+    member this.Add(id, note) =
+        this.AsMap() |> Map.add id note |> Notes.Create
+
+    member this.Remove id =
+        this.AsMap() |> Map.remove id |> Notes.Create
+
+    member this.ContainsKey id =
+        let (Notes notes) = this in notes.ContainsKey id
