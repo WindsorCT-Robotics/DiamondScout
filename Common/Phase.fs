@@ -25,7 +25,7 @@ type SubPhase =
       Description: SubPhaseDescription
       ParentPhase: Phase }
 
-type SubPhaseMap<'T> = IReadOnlyDictionary<SubPhase, 'T>
+type SubPhaseMap<'T> = IReadOnlyDictionary<SubPhaseId, 'T>
 
 [<RequireQualifiedAccess>]
 module SubPhase =
