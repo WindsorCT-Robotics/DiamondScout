@@ -231,21 +231,31 @@ module Game =
                   DefinitionId: ParameterDefinitionId
                   Value: ParameterValue }
 
-    type Event =
-        private
-        | GameStarted of name: GameName * year: DateOnly
-        | ChangeGameName of name: GameName
-        | ChangeYear of year: DateOnly
-        | RegisterDistrict of districtCode: FrcDistrictCode * districtName: FrcDistrictName
-        | ChangeDistrictName of districtCode: FrcDistrictCode * districtName: FrcDistrictName
-        | RegisterEvent of districtCode: FrcDistrictCode * eventId: FrcEventId * eventName: FrcEventName
-        | ChangeEventName of districtCode: FrcDistrictCode * eventId: FrcEventId * eventName: FrcEventName
-        | ScoutMatch of
-            districtCode: FrcDistrictCode *
-            eventId: FrcEventId *
-            matchNumber: MatchNumber *
-            team: AllianceTeam *
-            result: ScoutingResults
-        | DefineSubPhase of subPhaseId: SubPhaseId * subPhase: SubPhase
-        | DefineGamePiece of gamePieceId: GamePieceId * gamePiece: GamePiece
-        | DefineInfraction of infractionId: InfractionId * infraction: Infraction
+    [<RequireQualifiedAccess>]
+    module Event =
+        [<RequireQualifiedAccess>]
+        type Match =
+            | MatchRegistered of EventArgs.District.FrcEvent.Match.Registered
+            | MatchScouted of EventArgs.District.FrcEvent.Match.Scouted
+            | MatchNoteAdded of EventArgs.District.FrcEvent.Match.NoteAdded
+            | MatchNoteTextChanged of EventArgs.District.FrcEvent.Match.NoteTextChanged
+            | MatchNoteRemoved of EventArgs.District.FrcEvent.Match.NoteRemoved
+            | MatchWon of EventArgs.District.FrcEvent.Match.Won
+
+        [<RequireQualifiedAccess>]
+        type FrcEvent =
+            | Registered of EventArgs.District.FrcEvent.Registered
+            | NameChanged of EventArgs.District.FrcEvent.NameChanged
+            | MatchEvent of Match
+
+        [<RequireQualifiedAccess>]
+        type District =
+            | Registered of EventArgs.District.Registered
+            | NameChanged of EventArgs.District.NameChanged
+            | FrcEventEvent of FrcEvent
+
+        [<RequireQualifiedAccess>]
+        type Game =
+            | Started of EventArgs.Started
+            | NameChanged of EventArgs.NameChanged
+            | YearChanged of EventArgs.YearChanged
