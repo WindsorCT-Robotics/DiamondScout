@@ -54,6 +54,13 @@ module Game =
               Team: AllianceTeam
               Result: ScoutingResults }
 
+        type DefineSubPhase =
+            { SubPhaseId: SubPhaseId
+              SubPhaseName: SubPhaseName
+              SubPhaseDescription: SubPhaseDescription
+              ParentPhase: Phase }
+            
+
     type Event =
         private
         | GameStarted of name: GameName * year: DateOnly
