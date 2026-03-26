@@ -5,28 +5,28 @@ type GamePieceName = GamePieceName of string
 
 type GamePiece =
     { Name: GamePieceName
-      PhaseScore: SubPhaseMap<ScoreValue>
-      RankPoints: RankingPointGrant list }
+      SubPhaseScoreValues: SubPhaseMap<ScoreValue>
+      RankingPointGrants: RankingPointGrant list }
 
     static member Create name values rankPoints =
         { Name = name
-          PhaseScore = values
-          RankPoints = rankPoints }
+          SubPhaseScoreValues = values
+          RankingPointGrants = rankPoints }
 
 [<RequireQualifiedAccess>]
 module GamePiece =
     let create name values rankPoints =
         { Name = name
-          PhaseScore = values
-          RankPoints = rankPoints }
+          SubPhaseScoreValues = values
+          RankingPointGrants = rankPoints }
 
     let changeName name piece = { piece with GamePiece.Name = name }
 
     let changeValue value piece =
         { piece with
-            GamePiece.PhaseScore = value }
+            GamePiece.SubPhaseScoreValues = value }
 
-    let changeRankPoints rp piece = { piece with RankPoints = rp }
+    let changeRankPoints rp piece = { piece with RankingPointGrants = rp }
 
 type GamePiece with
     member this.ChangeName name = GamePiece.changeName name this

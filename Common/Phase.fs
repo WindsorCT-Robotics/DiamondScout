@@ -4,10 +4,10 @@ open System
 open System.Collections.Generic
 
 [<Struct>]
-type PhaseName = PhaseName of string
+type SubPhaseName = SubPhaseName of string
 
 [<Struct>]
-type PhaseDescription = PhaseDescription of string
+type SubPhaseDescription = SubPhaseDescription of string
 
 type Phase =
     | Autonomous
@@ -21,11 +21,11 @@ type Phase =
         | Endgame -> endgameAction.Invoke()
 
 type SubPhase =
-    { Name: PhaseName
-      Description: PhaseDescription
+    { Name: SubPhaseName
+      Description: SubPhaseDescription
       ParentPhase: Phase }
 
-type SubPhaseMap<'T> = IReadOnlyDictionary<SubPhase, 'T>
+type SubPhaseMap<'T> = IReadOnlyDictionary<SubPhaseId, 'T>
 
 [<RequireQualifiedAccess>]
 module SubPhase =

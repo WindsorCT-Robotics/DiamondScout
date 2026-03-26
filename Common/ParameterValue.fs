@@ -2,7 +2,6 @@ namespace ParagonRobotics.DiamondScout.Common
 
 open System
 open System.Collections.Generic
-open FsToolkit.ErrorHandling
 
 type ParameterValue =
     | DropdownChoice of index: int

@@ -3,6 +3,9 @@ namespace ParagonRobotics.DiamondScout.Common
 open System
 open System.Collections.Generic
 
+[<Struct>]
+type ParameterDefinitionName = ParameterDefinitionName of string
+
 type NumericSpinnerType =
     | IntegralSpinner of int
     | DecimalSpinner of double
@@ -37,7 +40,7 @@ type ParameterSpec =
         | MultiSelect(options, defaultChoices) -> multiSelectAction.Invoke(options, defaultChoices)
         | Checkbox defaultOption -> checkboxAction.Invoke(defaultOption)
 
-type ParameterDefinition = { Name: string; Spec: ParameterSpec }
+type ParameterDefinition = { Name: ParameterDefinitionName; Spec: ParameterSpec }
 
 [<RequireQualifiedAccess>]
 module ParameterDefinition =
