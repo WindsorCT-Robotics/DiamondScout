@@ -25,6 +25,7 @@ type private GameState =
 
 [<RequireQualifiedAccess>]
 module Game =
+    [<RequireQualifiedAccess>]
     module EventArgs =
         type Started = { Name: GameName; Year: DateOnly }
         type NameChanged = { Name: GameName }
@@ -89,7 +90,7 @@ module Game =
                           Team: AllianceTeam
                           NoteId: NoteId }
 
-                    type Won =
+                    type Concluded =
                         { DistrictCode: FrcDistrictCode
                           EventId: FrcEventId
                           Winner: Alliance }
@@ -240,7 +241,7 @@ module Game =
             | MatchNoteAdded of EventArgs.District.FrcEvent.Match.NoteAdded
             | MatchNoteTextChanged of EventArgs.District.FrcEvent.Match.NoteTextChanged
             | MatchNoteRemoved of EventArgs.District.FrcEvent.Match.NoteRemoved
-            | MatchWon of EventArgs.District.FrcEvent.Match.Won
+            | MatchConcluded of EventArgs.District.FrcEvent.Match.Concluded
 
         [<RequireQualifiedAccess>]
         type FrcEvent =
@@ -255,7 +256,63 @@ module Game =
             | FrcEventEvent of FrcEvent
 
         [<RequireQualifiedAccess>]
+        type SubPhase =
+            | Defined of EventArgs.SubPhase.Defined
+            | NameChanged of EventArgs.SubPhase.NameChanged
+            | DescriptionChanged of EventArgs.SubPhase.DescriptionChanged
+            | Removed of EventArgs.SubPhase.Removed
+
+        [<RequireQualifiedAccess>]
+        type GamePiece =
+            | Defined of EventArgs.GamePiece.Defined
+            | NameChanged of EventArgs.GamePiece.NameChanged
+            | RankingPointGrantsAdded of EventArgs.GamePiece.RankingPointGrantsAdded
+            | RankingPointGrantsRemoved of EventArgs.GamePiece.RankingPointGrantsRemoved
+            | ScoreAddedForSubPhase of EventArgs.GamePiece.ScoreAddedForSubPhase
+            | ScoreRemovedForSubPhase of EventArgs.GamePiece.ScoreRemovedForSubPhase
+            | ScoreChangedForSubPhase of EventArgs.GamePiece.ScoreChangedForSubPhase
+
+        [<RequireQualifiedAccess>]
+        type Infraction =
+            | Defined of EventArgs.Infraction.Defined
+            | NameChanged of EventArgs.Infraction.NameChanged
+            | SeverityChanged of EventArgs.Infraction.SeverityChanged
+            | CardChanged of EventArgs.Infraction.CardChanged
+
+        [<RequireQualifiedAccess>]
+        type PitResult =
+            | Scouted of EventArgs.PitResult.Scouted
+            | RobotNameChanged of EventArgs.PitResult.RobotNameChanged
+            | TeamChanged of EventArgs.PitResult.TeamChanged
+            | EndgameCapabilitiesChanged of EventArgs.PitResult.EndgameCapabilitiesChanged
+            | DrivetrainChanged of EventArgs.PitResult.DrivetrainChanged
+            | NoteAdded of EventArgs.PitResult.NoteAdded
+            | NoteTextChanged of EventArgs.PitResult.NoteTextChanged
+            | NoteRemoved of EventArgs.PitResult.NoteRemoved
+
+        [<RequireQualifiedAccess>]
+        type ParameterDefinition =
+            | Defined of EventArgs.ParameterDefinition.Defined
+            | NameChanged of EventArgs.ParameterDefinition.NameChanged
+            | SpecChanged of EventArgs.ParameterDefinition.SpecChanged
+
+        [<RequireQualifiedAccess>]
+        type Parameter =
+            | ValueSet of EventArgs.Parameter.ValueSet
+
+        [<RequireQualifiedAccess>]
         type Game =
             | Started of EventArgs.Started
             | NameChanged of EventArgs.NameChanged
             | YearChanged of EventArgs.YearChanged
+            | DistrictEvent of District
+            | SubPhaseEvent of SubPhase
+            | GamePieceEvent of GamePiece
+            | InfractionEvent of Infraction
+            | PitResultEvent of PitResult
+            | ParameterDefinitionEvent of ParameterDefinition
+            | ParameterEvent of Parameter
+
+        let private evolve state event =
+            match event with
+            | Game.Started args ->
