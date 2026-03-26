@@ -314,5 +314,38 @@ module Game =
             | ParameterEvent of Parameter
 
         let private evolve state event =
-            match event with
-            | Game.Started args ->
+            match (state, event) with
+            | GameState.GameNotStarted, Game.Started args ->
+                { Year = args.Year
+                  Name = args.Name
+                  FrcDistricts = Map.empty
+                  SubPhases = Map.empty
+                  GamePieces = Map.empty
+                  Infractions = Map.empty
+                  PitResults = Map.empty
+                  ParameterDefinitions = Map.empty
+                  Parameters = Map.empty }
+                |> GameState.GameStarted
+            | GameState.GameNotStarted, _ -> state
+            | GameState.GameStarted game, Game.NameChanged args ->
+                { game with Name = args.Name } |> GameState.GameStarted
+            | GameState.GameStarted game, Game.YearChanged args ->
+                { game with Year = args.Year } |> GameState.GameStarted
+            | GameState.GameStarted game, Game.DistrictEvent districtEvent ->
+                match districtEvent with
+                | District.Registered args ->
+                    let newDistrict =
+                        { Code = args.DistrictCode
+                          Name = args.DistrictName
+                          Events = Map.empty }
+
+                    { game with FrcDistricts = Map.add args.DistrictCode newDistrict game.FrcDistricts }
+                    |> GameState.GameStarted
+                | District.NameChanged args ->
+                    { game with FrcDistricts = game.FrcDistricts |> Map.change args.DistrictCode  (Option.map (fun d -> {d with Name = args.DistrictName })) }
+                    |> GameState.GameStarted
+                | District.FrcEventEvent frcEventEvent ->
+                    let change game districtId eventId =
+
+                    match frcEventEvent with
+                    | FrcEvent.Registered args ->

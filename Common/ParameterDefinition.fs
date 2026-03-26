@@ -40,7 +40,9 @@ type ParameterSpec =
         | MultiSelect(options, defaultChoices) -> multiSelectAction.Invoke(options, defaultChoices)
         | Checkbox defaultOption -> checkboxAction.Invoke(defaultOption)
 
-type ParameterDefinition = { Name: ParameterDefinitionName; Spec: ParameterSpec }
+type ParameterDefinition =
+    { Name: ParameterDefinitionName
+      Spec: ParameterSpec }
 
 [<RequireQualifiedAccess>]
 module ParameterDefinition =
