@@ -1,7 +1,7 @@
-﻿namespace ParagonRobotics.DiamondScout.Common
+﻿namespace ParagonRobotics.DiamondScout.Common.Functional
 
 open FsToolkit.ErrorHandling
-open ParagonRobotics.DiamondScout.Common.DomainEvents
+open ParagonRobotics.DiamondScout.Common
 
 /// A FIRST Robotics Competition team number.
 [<Struct>]
@@ -25,7 +25,7 @@ type TeamData =
         /// The team's name.
         TeamName: TeamName
         /// Notes about the team.
-        Notes: Notes
+        Notes: Map<NoteId, Note>
     }
 
 [<RequireQualifiedAccess>]
@@ -64,7 +64,7 @@ module Team =
                 | Team.Unregistered ->
                     { TeamNumber = teamNumber
                       TeamName = teamName
-                      Notes = Notes.Empty }
+                      Notes = Map.empty }
                     |> Team.Registered
                 | Team.Registered _ as team -> team
             | TeamNameChanged teamName ->

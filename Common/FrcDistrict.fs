@@ -1,6 +1,6 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
-open System.Collections.Generic
+open ParagonRobotics.DiamondScout.Common
 
 [<Struct>]
 type FrcDistrictCode =
@@ -23,4 +23,4 @@ type FrcDistrictName =
 type FrcDistrict =
     { Code: FrcDistrictCode
       Name: FrcDistrictName
-      Events: IDictionary<FrcEventId, FrcEvent> }
+      Events: Map<FrcEventId, FrcEvent> }

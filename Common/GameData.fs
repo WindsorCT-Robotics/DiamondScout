@@ -1,7 +1,7 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
 open System
-open System.Collections.Generic
+open ParagonRobotics.DiamondScout.Common
 
 [<Struct>]
 type GameName = GameName of string
@@ -58,13 +58,15 @@ module Game =
                     type Registered =
                         { DistrictCode: FrcDistrictCode
                           EventId: FrcEventId
+                          MatchId: MatchId
                           MatchNumber: MatchNumber }
+                        
                     type Scouted =
                         { DistrictCode: FrcDistrictCode
                           EventId: FrcEventId
                           MatchNumber: MatchNumber
                           Team: AllianceTeam
-                          Result: ScoutingResults }
+                          Result: ScoutingData }
 
                     type NoteAdded =
                         { DistrictCode: FrcDistrictCode
@@ -119,7 +121,7 @@ module Game =
             type Defined =
                 { GamePieceId: GamePieceId
                   GamePieceName: GamePieceName
-                  RankingPointGrants: RankingPointGrant IReadOnlyCollection
+                  RankingPointGrants: RankingPointGrant list
                   SubPhaseScoreValues: SubPhaseMap<ScoreValue> }
 
             type NameChanged =
@@ -128,11 +130,11 @@ module Game =
 
             type RankingPointGrantsAdded =
                 { GamePieceId: GamePieceId
-                  RankingPointGrants: RankingPointGrant IReadOnlyCollection }
+                  RankingPointGrants: RankingPointGrant list }
 
             type RankingPointGrantsRemoved =
                 { GamePieceId: GamePieceId
-                  RankingPointGrants: RankingPointGrant IReadOnlyCollection }
+                  RankingPointGrants: RankingPointGrant list }
 
             type ScoreAddedForSubPhase =
                 { GamePieceId: GamePieceId
@@ -177,7 +179,7 @@ module Game =
                   Name: RobotName
                   EndgameCapable: EndgameCapable
                   Drivetrain: Drivetrain
-                  Notes: Notes }
+                  Notes: Map<NoteId, Note> }
 
             type RobotNameChanged =
                 { Id: RobotId
@@ -236,12 +238,12 @@ module Game =
     module Event =
         [<RequireQualifiedAccess>]
         type Match =
-            | MatchRegistered of EventArgs.District.FrcEvent.Match.Registered
-            | MatchScouted of EventArgs.District.FrcEvent.Match.Scouted
-            | MatchNoteAdded of EventArgs.District.FrcEvent.Match.NoteAdded
-            | MatchNoteTextChanged of EventArgs.District.FrcEvent.Match.NoteTextChanged
-            | MatchNoteRemoved of EventArgs.District.FrcEvent.Match.NoteRemoved
-            | MatchConcluded of EventArgs.District.FrcEvent.Match.Concluded
+            | Registered of EventArgs.District.FrcEvent.Match.Registered
+            | Scouted of EventArgs.District.FrcEvent.Match.Scouted
+            | NoteAdded of EventArgs.District.FrcEvent.Match.NoteAdded
+            | NoteTextChanged of EventArgs.District.FrcEvent.Match.NoteTextChanged
+            | NoteRemoved of EventArgs.District.FrcEvent.Match.NoteRemoved
+            | Concluded of EventArgs.District.FrcEvent.Match.Concluded
 
         [<RequireQualifiedAccess>]
         type FrcEvent =
@@ -345,7 +347,51 @@ module Game =
                     { game with FrcDistricts = game.FrcDistricts |> Map.change args.DistrictCode  (Option.map (fun d -> {d with Name = args.DistrictName })) }
                     |> GameState.GameStarted
                 | District.FrcEventEvent frcEventEvent ->
-                    let change game districtId eventId =
-
+                    let changeFrcEvent eventId transform maybeDistrict =
+                        maybeDistrict
+                        |> Option.map (fun district -> 
+                            { district with
+                                  FrcDistrict.Events =
+                                      district.Events
+                                      |> Map.change eventId (Option.map transform) })
+                    
+                    let addFrcEvent eventId event maybeDistrict =
+                        maybeDistrict
+                        |> Option.map (fun district ->
+                            { district with
+                                  FrcDistrict.Events =
+                                      district.Events
+                                      |> Map.add eventId event })
+                        
                     match frcEventEvent with
                     | FrcEvent.Registered args ->
+                        { game with
+                              FrcDistricts =
+                                  game.FrcDistricts
+                                  |> Map.change
+                                      args.DistrictCode
+                                      (addFrcEvent args.EventId (FrcEvent.create args.EventName)) }
+                    | FrcEvent.NameChanged args ->
+                        { game with
+                              FrcDistricts =
+                                  game.FrcDistricts
+                                  |> Map.change
+                                      args.DistrictCode
+                                      (changeFrcEvent args.EventId (FrcEvent.changeName args.EventName))}
+                    | FrcEvent.MatchEvent matchEvent ->
+                        let addMatch matchId  maybeEvent =
+                            maybeEvent
+                            |> Option.map (fun event ->
+                                { event with
+                                      Matches = event.Matches |> FrcEvent.addMatch (Match.createMatch matchNumber (MatchScoutingResults []) })
+                        match matchEvent with
+                        | Match.Registered args ->
+                            { game with
+                                  FrcDistricts =
+                                      game.FrcDistricts
+                                      |> Map.change
+                                          args.DistrictCode
+                                          ((changeFrcEvent args.EventId  }
+
+                    |> GameState.GameStarted
+                    

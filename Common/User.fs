@@ -1,8 +1,7 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
 open System
 open FsToolkit.ErrorHandling
-open ParagonRobotics.DiamondScout.Common.DomainEvents
 
 [<Struct>]
 type UserName = UserName of string

@@ -10,7 +10,7 @@ type ScoutedTeam =
     { Team: Team
       Robot: struct (RobotId * Robot)
       ScoutingParameters: IReadOnlyDictionary<ParameterDefinitionId, struct (ParameterDefinition * ParameterValue)>
-      ScoutResults: ScoutingResults }
+      ScoutResults: ScoutingData }
 
 type ScoutedMatch =
     { MatchNumber: MatchNumber

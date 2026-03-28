@@ -1,4 +1,4 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
 [<Struct>]
 type GamePieceName = GamePieceName of string

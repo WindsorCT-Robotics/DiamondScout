@@ -1,4 +1,4 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
 [<Struct>]
 type MatchNumber = MatchNumber of uint
@@ -8,13 +8,14 @@ type WinningAlliance =
     | Winner of winningAlliance: Alliance
 
 type AllianceScoutingResults =
-    { Team1: ScoutingResults
-      Team2: ScoutingResults
-      Team3: ScoutingResults }
+    { Team1: ScoutingData
+      Team2: ScoutingData
+      Team3: ScoutingData }
 
 type MatchScoutingResults =
     { RedAlliance: AllianceScoutingResults
       BlueAlliance: AllianceScoutingResults }
+    
 
 type AllianceTeamNumber =
     | Team1

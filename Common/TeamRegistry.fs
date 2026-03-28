@@ -1,7 +1,6 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
 open FsToolkit.ErrorHandling
-open ParagonRobotics.DiamondScout.Common.DomainEvents
 
 type TeamRegistry = private { Teams: Set<TeamNumber> }
 
