@@ -27,7 +27,7 @@
     <Compile Include="GamePieces.fs" />
     <Compile Include="Infractions.fs" />
     <Compile Include="RobotData.fs" />
-    <Compile Include="ScoutingData.fs" />
+    <Compile Include="ScoutingResult.fs" />
     <Compile Include="MatchData.fs" />
     <Compile Include="FrcEvent.fs" />
     <Compile Include="FrcDistrict.fs" />

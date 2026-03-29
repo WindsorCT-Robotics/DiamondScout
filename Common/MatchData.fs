@@ -1,21 +1,37 @@
 namespace ParagonRobotics.DiamondScout.Common.Functional
 
+
 [<Struct>]
 type MatchNumber = MatchNumber of uint
+
+[<Struct>]
+type TournamentLevel =
+    | None
+    | Practice
+    | Qualification
+    | Playoff
 
 type WinningAlliance =
     | Undecided
     | Winner of winningAlliance: Alliance
 
 type AllianceScoutingResults =
-    { Team1: ScoutingData
-      Team2: ScoutingData
-      Team3: ScoutingData }
+    { Team1: ScoutingResult
+      Team2: ScoutingResult
+      Team3: ScoutingResult }
 
 type MatchScoutingResults =
     { RedAlliance: AllianceScoutingResults
       BlueAlliance: AllianceScoutingResults }
-    
+    static member NotStarted =
+        { RedAlliance =
+            { Team1 = ScoutingResult.NotStarted
+              Team2 = ScoutingResult.NotStarted
+              Team3 = ScoutingResult.NotStarted }
+          BlueAlliance =
+            { Team1 = ScoutingResult.NotStarted
+              Team2 = ScoutingResult.NotStarted
+              Team3 = ScoutingResult.NotStarted } }
 
 type AllianceTeamNumber =
     | Team1
@@ -26,13 +42,15 @@ type AllianceTeam = AllianceTeam of Alliance * AllianceTeamNumber
 
 type Match =
     { MatchNumber: MatchNumber
+      TournamentLevel: TournamentLevel
       MatchScoutResults: MatchScoutingResults
       Winner: WinningAlliance }
 
 [<RequireQualifiedAccess>]
 module Match =
-    let createMatch matchNumber matchScoutResults =
+    let createMatch tournamentLevel matchNumber matchScoutResults =
         { MatchNumber = matchNumber
+          TournamentLevel = tournamentLevel
           MatchScoutResults = matchScoutResults
           Winner = Undecided }
 
