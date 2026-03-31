@@ -1,20 +1,27 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
-open System.Collections.Generic
+open ParagonRobotics.DiamondScout.Common
 
 [<Struct>]
 type FrcEventName = FrcEventName of string
 
 type FrcEvent =
     { Name: FrcEventName
-      Matches: MatchId IReadOnlyCollection }
-
-    static member Create name = { Name = name; Matches = [] }
+      Matches: Map<MatchId, Match> }
 
 [<RequireQualifiedAccess>]
 module FrcEvent =
-    let create name matches = { Name = name; Matches = matches }
+    let createWithMatches name matches = { Name = name; Matches = matches }
+    let create name = createWithMatches name Map.empty
 
-    let add matchId (event: FrcEvent) =
+    let addMatch matchId matchData (event: FrcEvent) =
         { event with
-            Matches = List [ matchId; yield! event.Matches ] }
+            Matches = event.Matches |> Map.add matchId matchData }
+        
+    let removeMatch matchId event =
+        { event with
+              Matches = event.Matches |> Map.remove matchId }
+
+    let changeName name frcEvent =
+        { frcEvent with
+              FrcEvent.Name = name }

@@ -1,7 +1,6 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
 open System
-open System.Collections.Generic
 
 [<Struct>]
 type ParameterDefinitionName = ParameterDefinitionName of string
@@ -22,37 +21,13 @@ type ParameterSpec =
     | RadialSelection of options: string list * defaultChoice: int
     | MultiSelect of options: string list * defaultChoices: int list
     | Checkbox of defaultState: bool
-
-    member this.Match
-        (
-            dropdownAction: Action<string IReadOnlyList, int>,
-            textBoxAction: Action<string>,
-            numericSpinnerAction: Action<NumericSpinnerType>,
-            radialSelectionAction: Action<string IReadOnlyList, int>,
-            multiSelectAction: Action<string IReadOnlyList, int IReadOnlyList>,
-            checkboxAction: Action<bool>
-        ) =
-        match this with
-        | Dropdown(options, defaultChoice) -> dropdownAction.Invoke(options, defaultChoice)
-        | TextBox defaultText -> textBoxAction.Invoke(defaultText)
-        | NumericSpinner spinnerType -> numericSpinnerAction.Invoke(spinnerType)
-        | RadialSelection(options, defaultChoice) -> radialSelectionAction.Invoke(options, defaultChoice)
-        | MultiSelect(options, defaultChoices) -> multiSelectAction.Invoke(options, defaultChoices)
-        | Checkbox defaultOption -> checkboxAction.Invoke(defaultOption)
-
-type ParameterDefinition = { Name: ParameterDefinitionName; Spec: ParameterSpec }
+    
+type ParameterDefinition =
+    { Name: ParameterDefinitionName
+      Spec: ParameterSpec }
 
 [<RequireQualifiedAccess>]
 module ParameterDefinition =
     let create name spec = { Name = name; Spec = spec }
     let changeName name (param: ParameterDefinition) = { param with Name = name }
     let changeSpec spec (param: ParameterDefinition) = { param with Spec = spec }
-
-type ParameterDefinition with
-    static member Create name spec = ParameterDefinition.create name spec
-
-    member this.Rename name =
-        ParameterDefinition.changeName name this
-
-    member this.Modify spec =
-        ParameterDefinition.changeSpec spec this

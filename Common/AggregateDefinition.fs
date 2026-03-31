@@ -1,4 +1,4 @@
-namespace ParagonRobotics.DiamondScout.Common.DomainEvents
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
 open FsToolkit.ErrorHandling
 

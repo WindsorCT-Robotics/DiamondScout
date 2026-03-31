@@ -1,7 +1,6 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
-open System
-open System.Collections.Generic
+open ParagonRobotics.DiamondScout.Common.Functional
 
 type ParameterValue =
     | DropdownChoice of index: int
@@ -23,25 +22,3 @@ module ParameterValue =
         | RadialSelection(_, defaultChoice) -> RadialChoice defaultChoice
         | MultiSelect(_, defaultChoices) -> MultiSelectChoices defaultChoices
         | ParameterSpec.Checkbox defaultValue -> Checkbox defaultValue
-
-type ParameterValue with
-    member this.Match
-        (
-            dropdownAction: Action<int>,
-            textBoxAction: Action<string>,
-            integralSpinnerAction: Action<int>,
-            decimalSpinnerAction: Action<double>,
-            radialSelectionAction: Action<int>,
-            multiSelectAction: Action<int IReadOnlyList>,
-            checkboxAction: Action<bool>
-        ) =
-        match this with
-        | DropdownChoice choice -> dropdownAction.Invoke(choice)
-        | Text text -> textBoxAction.Invoke(text)
-        | Integral i -> integralSpinnerAction.Invoke(i)
-        | Decimal d -> decimalSpinnerAction.Invoke(d)
-        | RadialChoice choice -> radialSelectionAction.Invoke(choice)
-        | MultiSelectChoices choices -> multiSelectAction.Invoke(choices)
-        | Checkbox b -> checkboxAction.Invoke(b)
-
-    static member GetDefaultValue(def: ParameterDefinition) = ParameterValue.defaultValue def

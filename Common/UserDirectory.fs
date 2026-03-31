@@ -1,7 +1,7 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
+open ParagonRobotics.DiamondScout.Common
 open FsToolkit.ErrorHandling
-open ParagonRobotics.DiamondScout.Common.DomainEvents
 
 /// Username normalized for purposes of comparison.
 [<Struct>]

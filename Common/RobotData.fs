@@ -1,6 +1,7 @@
-﻿namespace ParagonRobotics.DiamondScout.Common
+﻿namespace ParagonRobotics.DiamondScout.Common.Functional
 
 open System
+open ParagonRobotics.DiamondScout.Common
 
 [<Struct>]
 type RobotName = RobotName of string
@@ -41,7 +42,7 @@ type Robot =
       Team: TeamId
       EndgameCapable: EndgameCapable
       Drivetrain: Drivetrain
-      Notes: Notes }
+      Notes: Map<NoteId, Note> }
 
 [<RequireQualifiedAccess>]
 module Robot =
@@ -50,7 +51,7 @@ module Robot =
           Team = team
           EndgameCapable = TierCapability scoringTier
           Drivetrain = drivetrain
-          Notes = Notes.Empty }
+          Notes = Map.empty }
 
     let withEndgameCapabilities endgameCapability robot =
         { robot with

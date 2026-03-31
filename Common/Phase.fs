@@ -1,7 +1,7 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Functional
 
 open System
-open System.Collections.Generic
+open ParagonRobotics.DiamondScout.Common
 
 [<Struct>]
 type SubPhaseName = SubPhaseName of string
@@ -25,7 +25,7 @@ type SubPhase =
       Description: SubPhaseDescription
       ParentPhase: Phase }
 
-type SubPhaseMap<'T> = IReadOnlyDictionary<SubPhaseId, 'T>
+type SubPhaseMap<'T> = Map<SubPhaseId, 'T>
 
 [<RequireQualifiedAccess>]
 module SubPhase =
