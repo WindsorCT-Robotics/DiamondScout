@@ -35,6 +35,8 @@
     <Compile Include="ParameterValue.fs" />
     <Compile Include="GameData.fs" />
     <Compile Include="RobotRanking.fs" />
+    <Compile Include="Remoting.fs" />
+    <Folder Include="Services\" />
   </ItemGroup>
 
   <ItemGroup>
