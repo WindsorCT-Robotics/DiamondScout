@@ -34,15 +34,10 @@ module SubPhase =
           Description = desc
           ParentPhase = phase }
 
-    let changeName name subPhase = { subPhase with SubPhase.Name = name }
+    let withName name subPhase = { subPhase with SubPhase.Name = name }
 
-    let changeDescription desc subPhase =
+    let withDescription desc subPhase =
         { subPhase with
             SubPhase.Description = desc }
 
-    let changePhase phase subPhase = { subPhase with ParentPhase = phase }
-
-type SubPhase with
-    member this.ChangeName name = SubPhase.changeName name this
-    member this.ChangeDescription desc = SubPhase.changeDescription desc this
-    member this.ChangePhase phase = SubPhase.changePhase phase this
+    let withPhase phase subPhase = { subPhase with ParentPhase = phase }

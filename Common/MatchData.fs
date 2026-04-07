@@ -1,5 +1,6 @@
 namespace ParagonRobotics.DiamondScout.Common.Functional
 
+open FsToolkit.ErrorHandling
 
 [<Struct>]
 type MatchNumber = MatchNumber of uint
@@ -48,32 +49,65 @@ type Match =
 
 [<RequireQualifiedAccess>]
 module Match =
+    [<RequireQualifiedAccess>]
+    type Error =
+        | ScoutingError of scoutingError: ScoutingResult.Error
+        | MatchAlreadyFinalized
+        | MatchNotFinalized of unfinalizedMatchResults: AllianceTeam
+        
+    module private OnlyIf =
+        let matchIsFinalized (matchData: Match) =
+            let results = matchData.MatchScoutResults
+
+            let validateTeam alliance teamNumber scoutingResult =
+                ScoutingResult.mustBeFinalized scoutingResult
+                |> Validation.mapError (fun _ -> Error.MatchNotFinalized(AllianceTeam(alliance, teamNumber)))
+
+            validation {
+                let! _ = validateTeam Red Team1 results.RedAlliance.Team1
+                and! _ = validateTeam Red Team2 results.RedAlliance.Team2
+                and! _ = validateTeam Red Team3 results.RedAlliance.Team3
+                and! _ = validateTeam Blue Team1 results.BlueAlliance.Team1
+                and! _ = validateTeam Blue Team2 results.BlueAlliance.Team2
+                and! _ = validateTeam Blue Team3 results.BlueAlliance.Team3
+                return matchData
+            }
+
     let createMatch tournamentLevel matchNumber matchScoutResults =
         { MatchNumber = matchNumber
           TournamentLevel = tournamentLevel
           MatchScoutResults = matchScoutResults
           Winner = Undecided }
 
-    let scoutAllianceTeam (AllianceTeam(alliance, team)) results matchData =
+    let getScoutingResult alliance team matchData =
+        match (alliance, team) with
+        | Red, Team1 -> matchData.MatchScoutResults.RedAlliance.Team1
+        | Red, Team2 -> matchData.MatchScoutResults.RedAlliance.Team2
+        | Red, Team3 -> matchData.MatchScoutResults.RedAlliance.Team3
+        | Blue, Team1 -> matchData.MatchScoutResults.BlueAlliance.Team1
+        | Blue, Team2 -> matchData.MatchScoutResults.BlueAlliance.Team2
+        | Blue, Team3 -> matchData.MatchScoutResults.BlueAlliance.Team3
+        
+    let updateScoutingResult alliance team matchData newScoutingResult =
         match (alliance, team) with
         | Red, Team1 ->
             { matchData with
-                MatchScoutResults.RedAlliance.Team1 = results }
+                MatchScoutResults.RedAlliance.Team1 = newScoutingResult }
         | Red, Team2 ->
             { matchData with
-                MatchScoutResults.RedAlliance.Team2 = results }
+                MatchScoutResults.RedAlliance.Team2 = newScoutingResult }
         | Red, Team3 ->
             { matchData with
-                MatchScoutResults.RedAlliance.Team3 = results }
+                MatchScoutResults.RedAlliance.Team3 = newScoutingResult }
         | Blue, Team1 ->
             { matchData with
-                MatchScoutResults.BlueAlliance.Team1 = results }
+                MatchScoutResults.BlueAlliance.Team1 = newScoutingResult }
         | Blue, Team2 ->
             { matchData with
-                MatchScoutResults.BlueAlliance.Team2 = results }
+                MatchScoutResults.BlueAlliance.Team2 = newScoutingResult }
         | Blue, Team3 ->
             { matchData with
-                MatchScoutResults.BlueAlliance.Team3 = results }
+                MatchScoutResults.BlueAlliance.Team3 = newScoutingResult }
 
     let setWinner winner matchData =
         { matchData with

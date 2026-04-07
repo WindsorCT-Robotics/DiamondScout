@@ -40,13 +40,9 @@ module Ranking =
     let create value threshold =
         { Value = value; Threshold = threshold }
 
-    let changeValue value rankingPointGrant =
+    let withValue value rankingPointGrant =
         { rankingPointGrant with Value = value }
 
-    let changeThreshold threshold rankingPointGrant =
+    let withThreshold threshold rankingPointGrant =
         { rankingPointGrant with
             Threshold = threshold }
-
-type RankingPointGrant with
-    member this.ChangeValue value = Ranking.changeValue value this
-    member this.ChangeThreshold threshold = Ranking.changeThreshold threshold this

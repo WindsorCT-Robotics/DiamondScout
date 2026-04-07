@@ -6,14 +6,20 @@ open FsToolkit.ErrorHandling
 [<Struct>]
 type NoteContent = NoteContent of string
 
+type Note =
+    private
+        { UserId: UserId
+          Text: NoteContent }
+
 [<RequireQualifiedAccess>]
 module Note =
     type Error =
         | InvalidUserId of user: UserId
         | EmptyText
+        | NotFound of noteId: NoteId
 
     [<RequireQualifiedAccess>]
-    module internal OnlyIf =
+    module private OnlyIf =
         let userIdValid userId =
             match userId = UserId.Zero with
             | true -> userId |> InvalidUserId |> Validation.error
@@ -23,26 +29,17 @@ module Note =
             match System.String.IsNullOrWhiteSpace text with
             | true -> Validation.error EmptyText
             | false -> text |> NoteContent |> Validation.ok
-
-type Note =
-    private
-        { UserId: UserId
-          Text: NoteContent }
-
-    static member TryCreate userId text =
+            
+    let create userId text =
         validation {
-            let! userId = Note.OnlyIf.userIdValid userId
-            and! text = Note.OnlyIf.textNotEmpty text
+            let! userId = OnlyIf.userIdValid userId
+            and! text = OnlyIf.textNotEmpty text
 
             return { UserId = userId; Text = text }
         }
 
-    static member Create userId text =
-        Note.TryCreate userId text
-        |> Result.defaultWith (fun e -> $" Unable to create note: {e}" |> invalidOp)
-
-    member this.Edit text =
+    let edit text note =
         validation {
-            let! text = Note.OnlyIf.textNotEmpty text
-            return { this with Text = text }
+            let! text = OnlyIf.textNotEmpty text
+            return { note with Text = text }
         }

@@ -75,7 +75,7 @@ module Team =
                 match team with
                 | Team.Registered data ->
                     { data with
-                        Notes = data.Notes.Add(noteId, Note.Create userId noteContent) }
+                        Notes = data.Notes.Add(noteId, Note.create userId noteContent) }
                     |> Team.Registered
                 | Team.Unregistered as team -> team
             | NoteRemoved noteId ->

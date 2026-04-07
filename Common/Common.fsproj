@@ -26,13 +26,13 @@
     <Compile Include="Phase.fs" />
     <Compile Include="GamePieces.fs" />
     <Compile Include="Infractions.fs" />
+    <Compile Include="ParameterDefinition.fs" />
+    <Compile Include="ParameterValue.fs" />
     <Compile Include="RobotData.fs" />
     <Compile Include="ScoutingResult.fs" />
     <Compile Include="MatchData.fs" />
     <Compile Include="FrcEvent.fs" />
     <Compile Include="FrcDistrict.fs" />
-    <Compile Include="ParameterDefinition.fs" />
-    <Compile Include="ParameterValue.fs" />
     <Compile Include="GameData.fs" />
     <Compile Include="RobotRanking.fs" />
     <Compile Include="Remoting.fs" />

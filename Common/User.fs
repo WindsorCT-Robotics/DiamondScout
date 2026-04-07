@@ -19,14 +19,9 @@ type Role =
         | Scouter -> isScouter.Invoke()
 
 type UserData =
-    { Name: UserName
-      Role: Role }
-
-    static member Zero = { Name = UserName ""; Role = Viewer }
-
-    member this.IsAdmin = this.Role = Admin
-    member this.IsScouter = this.Role = Scouter
-    member this.IsViewer = this.Role = Viewer
+    private
+        { Name: UserName
+          Role: Role }
 
 [<RequireQualifiedAccess>]
 type User =
@@ -46,8 +41,8 @@ module UserData =
     let isAdmin user = user.Role = Admin
     let isScouter user = user.Role = Scouter
     let isViewer user = user.Role = Viewer
-    let private setRole role user = { user with Role = role }
-    let private setName name user = { user with Name = name }
+    let private withRole role user = { user with Role = role }
+    let private withName name user = { user with Name = name }
 
     let private create name role =
         { Name = name; Role = role } |> User.Active
@@ -66,13 +61,13 @@ module UserData =
             | NameChanged name ->
                 match user with
                 | User.Empty -> User.Empty
-                | User.Inactive data -> data |> setName name |> User.Inactive
-                | User.Active data -> data |> setName name |> User.Active
+                | User.Inactive data -> data |> withName name |> User.Inactive
+                | User.Active data -> data |> withName name |> User.Active
             | RoleChanged role ->
                 match user with
                 | User.Empty -> User.Empty
-                | User.Inactive data -> data |> setRole role |> User.Inactive
-                | User.Active data -> data |> setRole role |> User.Active
+                | User.Inactive data -> data |> withRole role |> User.Inactive
+                | User.Active data -> data |> withRole role |> User.Active
             | Deactivated ->
                 match user with
                 | User.Empty -> User.Empty

@@ -170,3 +170,21 @@ module ScoutingResult =
                 ScoutingData.Notes = matchData.Notes.Remove noteId }
             |> ScoutingResult.Finalized
             |> Validation.ok
+
+    let mustBeFinalized scoutingResult =
+        match scoutingResult with
+        | ScoutingResult.Finalized _ as scoutingResult -> scoutingResult |> Validation.ok
+        | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
+        | ScoutingResult.Scouting _ -> Error.ScoutingInProgress |> Validation.error
+        
+    let mustBeInProgress scoutingResult =
+        match scoutingResult with
+        | ScoutingResult.Scouting _ as scoutingResult -> scoutingResult |> Validation.ok
+        | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
+        | ScoutingResult.Finalized _ -> Error.ScoutingResultFinalized |> Validation.error
+        
+    let mustBeNotStarted scoutingResult =
+        match scoutingResult with
+        | ScoutingResult.NotStarted as scoutingResult -> scoutingResult |> Validation.ok
+        | ScoutingResult.Scouting _ -> Error.ScoutingInProgress |> Validation.error
+        | ScoutingResult.Finalized _ -> Error.ScoutingResultFinalized |> Validation.error

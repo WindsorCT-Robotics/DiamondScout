@@ -1,34 +1,43 @@
 namespace ParagonRobotics.DiamondScout.Common.Functional
 
+open FsToolkit.ErrorHandling
+
 [<Struct>]
 type GamePieceName = GamePieceName of string
 
 type GamePiece =
-    { Name: GamePieceName
-      SubPhaseScoreValues: SubPhaseMap<ScoreValue>
-      RankingPointGrants: RankingPointGrant list }
-
-    static member Create name values rankPoints =
-        { Name = name
-          SubPhaseScoreValues = values
-          RankingPointGrants = rankPoints }
+    private
+        { Name: GamePieceName
+          SubPhaseScoreValues: SubPhaseMap<ScoreValue>
+          RankingPointGrants: RankingPointGrant list }
 
 [<RequireQualifiedAccess>]
 module GamePiece =
-    let create name values rankPoints =
-        { Name = name
-          SubPhaseScoreValues = values
-          RankingPointGrants = rankPoints }
+    type Error =
+        | GamePieceNameEmpty
 
-    let changeName name piece = { piece with GamePiece.Name = name }
+    module private OnlyIf =
+        let nameNotEmpty (GamePieceName name as gamePieceName) =
+            match System.String.IsNullOrWhiteSpace name with
+            | true -> GamePieceNameEmpty |> Validation.error
+            | false -> gamePieceName |> Validation.ok
+            
+    let create name values rankPoints = validation {
+        let! name = OnlyIf.nameNotEmpty name
+        
+        return
+            { Name = name
+              SubPhaseScoreValues = values
+              RankingPointGrants = rankPoints }
+    }
 
+    let withName name piece = validation {
+        let! name = OnlyIf.nameNotEmpty name
+        return { piece with GamePiece.Name = name }
+    }
+    
     let changeValue value piece =
         { piece with
             GamePiece.SubPhaseScoreValues = value }
 
     let changeRankPoints rp piece = { piece with RankingPointGrants = rp }
-
-type GamePiece with
-    member this.ChangeName name = GamePiece.changeName name this
-    member this.ChangeValue value = GamePiece.changeValue value this
-    member this.ChangeRankPoints rp = GamePiece.changeRankPoints rp this

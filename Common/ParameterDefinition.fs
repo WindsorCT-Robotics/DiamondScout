@@ -29,5 +29,5 @@ type ParameterDefinition =
 [<RequireQualifiedAccess>]
 module ParameterDefinition =
     let create name spec = { Name = name; Spec = spec }
-    let changeName name (param: ParameterDefinition) = { param with Name = name }
-    let changeSpec spec (param: ParameterDefinition) = { param with Spec = spec }
+    let withName name (param: ParameterDefinition) = { param with Name = name }
+    let withSpec spec (param: ParameterDefinition) = { param with Spec = spec }
