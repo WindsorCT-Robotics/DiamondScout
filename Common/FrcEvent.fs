@@ -23,6 +23,11 @@ module FrcEvent =
             Matches = event.Matches |> Map.remove matchId }
 
     let changeName name frcEvent = { frcEvent with FrcEvent.Name = name }
+    
+    let findMatchByMatchNumber tournamentLevel matchNumber frcEvent =
+        frcEvent.Matches
+        |> Map.tryFindKey (fun _ m ->
+            m.MatchNumber = matchNumber && m.TournamentLevel = tournamentLevel)
 
     let changeMatch matchId transform frcEvent =
         { frcEvent with
