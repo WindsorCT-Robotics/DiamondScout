@@ -75,7 +75,7 @@ module Team =
                 match team with
                 | Team.Registered data ->
                     { data with
-                        Notes = data.Notes.Add(noteId, Note.create userId noteContent) }
+                        Notes = data.Notes.Add(noteId, { UserId = userId; Text = noteContent }) }
                     |> Team.Registered
                 | Team.Unregistered as team -> team
             | NoteRemoved noteId ->
@@ -134,7 +134,7 @@ module Team =
                 validation {
                     let! data = OnlyIf.teamIsRegistered team
                     let! noteId = OnlyIf.noteIdUnique data noteId
-                    let! _ = Note.TryCreate userId noteContent |> Validation.mapError NoteError
+                    let! _ = Note.create userId noteContent |> Validation.mapError NoteError
 
                     return NoteAdded(noteId, userId, noteContent) |> List.singleton
                 }

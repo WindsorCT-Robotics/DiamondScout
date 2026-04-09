@@ -18,10 +18,7 @@ type Role =
         | Viewer -> isViewer.Invoke()
         | Scouter -> isScouter.Invoke()
 
-type UserData =
-    private
-        { Name: UserName
-          Role: Role }
+type UserData = private { Name: UserName; Role: Role }
 
 [<RequireQualifiedAccess>]
 type User =

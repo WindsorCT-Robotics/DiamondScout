@@ -17,6 +17,7 @@ module UserDirectory =
         | UserAlreadyRegistered of UserId
         | UserNotFound of UserId
         | UserNameTaken of UserId
+        | UserIdIsZero
 
     type Command =
         | Register of userId: UserId * name: UserName
@@ -46,6 +47,11 @@ module UserDirectory =
 
     [<RequireQualifiedAccess>]
     module private OnlyIf =
+        let usetIdNotZero id =
+            match id = UserId.Zero with
+            | true -> UserIdIsZero |> Validation.error
+            | false -> Validation.ok id
+
         let userIdIsUnique registry id =
             match Set.contains id registry.RegisteredUsers with
             | true -> id |> UserAlreadyRegistered |> Validation.error
@@ -69,7 +75,8 @@ module UserDirectory =
             match command with
             | Register(id, name) ->
                 validation {
-                    let! id = OnlyIf.userIdIsUnique registry id
+                    let! _ = OnlyIf.userIdIsUnique registry id
+                    and! id = OnlyIf.usetIdNotZero id
                     and! name = normalize >> OnlyIf.userNameIsUnique registry <| name
 
                     return Registered(id, name) |> List.singleton
@@ -89,7 +96,7 @@ module UserDirectory =
                 }
 
     let initialState =
-        { RegisteredUsers = Set [ UserId.Zero ]
-          UserIdsByName = Map [ UserData.Zero.Name |> Command.normalize, UserId.Zero ] }
+        { RegisteredUsers = Set.empty
+          UserIdsByName = Map.empty }
 
     let definition = AggregateDefinition.create initialState Event.evolve Command.decide

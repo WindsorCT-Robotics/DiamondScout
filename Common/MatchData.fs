@@ -24,6 +24,7 @@ type AllianceScoutingResults =
 type MatchScoutingResults =
     { RedAlliance: AllianceScoutingResults
       BlueAlliance: AllianceScoutingResults }
+
     static member NotStarted =
         { RedAlliance =
             { Team1 = ScoutingResult.NotStarted
@@ -54,7 +55,7 @@ module Match =
         | ScoutingError of scoutingError: ScoutingResult.Error
         | MatchAlreadyFinalized
         | MatchNotFinalized of unfinalizedMatchResults: AllianceTeam
-        
+
     module private OnlyIf =
         let matchIsFinalized (matchData: Match) =
             let results = matchData.MatchScoutResults
@@ -87,7 +88,7 @@ module Match =
         | Blue, Team1 -> matchData.MatchScoutResults.BlueAlliance.Team1
         | Blue, Team2 -> matchData.MatchScoutResults.BlueAlliance.Team2
         | Blue, Team3 -> matchData.MatchScoutResults.BlueAlliance.Team3
-        
+
     let updateScoutingResult alliance team matchData newScoutingResult =
         match (alliance, team) with
         | Red, Team1 ->

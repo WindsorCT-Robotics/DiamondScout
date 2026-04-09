@@ -7,7 +7,7 @@ open FsToolkit.ErrorHandling
 type NoteContent = NoteContent of string
 
 type Note =
-    private
+    internal
         { UserId: UserId
           Text: NoteContent }
 
@@ -29,7 +29,7 @@ module Note =
             match System.String.IsNullOrWhiteSpace text with
             | true -> Validation.error EmptyText
             | false -> text |> NoteContent |> Validation.ok
-            
+
     let create userId text =
         validation {
             let! userId = OnlyIf.userIdValid userId

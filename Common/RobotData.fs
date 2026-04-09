@@ -8,6 +8,7 @@ open ParagonRobotics.DiamondScout.Common
 type RobotName =
     private
     | RobotName of string
+
     member this.Value = let (RobotName name) = this in name
 
 [<Struct>]
@@ -56,37 +57,39 @@ module Robot =
         | ParameterDoesNotExist of ParameterDefinitionId
         | RobotNameEmpty
         | NoteError of Note.Error
-        
+
     [<RequireQualifiedAccess>]
     module private OnlyIf =
         let parameterDoesNotExist parameterId robot =
             match robot.PitScoutingParameters.ContainsKey parameterId with
             | true -> ParameterExists parameterId |> Validation.error
             | false -> parameterId |> Validation.ok
-            
+
         let parameterExists parameterId robot =
             match robot.PitScoutingParameters.ContainsKey parameterId with
             | true -> parameterId |> Validation.ok
             | false -> ParameterDoesNotExist parameterId |> Validation.error
-            
-        let robotNameNotEmpty (RobotName name as robotName)=
-            match System.String.IsNullOrWhiteSpace name with
+
+        let robotNameNotEmpty (RobotName name as robotName) =
+            match String.IsNullOrWhiteSpace name with
             | true -> RobotNameEmpty |> Validation.error
             | false -> robotName |> Validation.ok
-            
-    let createWithParameters name team endgameCapability pitScoutingParams drivetrain = validation {
-        let! robotName = OnlyIf.robotNameNotEmpty name
-        
-        return 
-            { Name = name
-              Team = team
-              EndgameCapable = endgameCapability
-              Drivetrain = drivetrain
-              PitScoutingParameters = pitScoutingParams
-              Notes = Map.empty }
-    }
-    
-    let create name team endgameCapability drivetrain = createWithParameters name team endgameCapability Map.empty drivetrain
+
+    let createWithParameters name team endgameCapability pitScoutingParams drivetrain =
+        validation {
+            let! name = OnlyIf.robotNameNotEmpty name
+
+            return
+                { Name = name
+                  Team = team
+                  EndgameCapable = endgameCapability
+                  Drivetrain = drivetrain
+                  PitScoutingParameters = pitScoutingParams
+                  Notes = Map.empty }
+        }
+
+    let create name team endgameCapability drivetrain =
+        createWithParameters name team endgameCapability Map.empty drivetrain
 
     let withEndgameCapabilities endgameCapability robot =
         { robot with
@@ -94,16 +97,33 @@ module Robot =
 
     let withDrivetrain drivetrain robot = { robot with Drivetrain = drivetrain }
 
-    let addNote noteId userId noteContents robot = validation {
-        let! note = Note.create userId noteContents
-        
-        return
-            { robot with
-                Robot.Notes = robot.Notes.Add(noteId, note) }
-    }
+    let addNote noteId userId noteContents robot =
+        validation {
+            let! note = Note.create userId noteContents
+
+            return
+                { robot with
+                    Robot.Notes = robot.Notes.Add(noteId, note) }
+        }
 
     let removeNote noteId robot =
         { robot with
             Robot.Notes = robot.Notes.Remove(noteId) }
 
-    let addPitScoutingParameter parameterId value robot =
+    let setPitScoutingParameter parameterId value robot =
+        validation {
+            let! parameterId = OnlyIf.parameterDoesNotExist parameterId robot
+
+            return
+                { robot with
+                    PitScoutingParameters = robot.PitScoutingParameters.Add(parameterId, value) }
+        }
+
+    let removePitScoutingParameter parameterId robot =
+        validation {
+            let! parameterId = OnlyIf.parameterExists parameterId robot
+
+            return
+                { robot with
+                    PitScoutingParameters = robot.PitScoutingParameters.Remove(parameterId) }
+        }

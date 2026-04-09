@@ -17,11 +17,9 @@ module FrcEvent =
     let addMatch matchId matchData (event: FrcEvent) =
         { event with
             Matches = event.Matches |> Map.add matchId matchData }
-        
+
     let removeMatch matchId event =
         { event with
-              Matches = event.Matches |> Map.remove matchId }
+            Matches = event.Matches |> Map.remove matchId }
 
-    let changeName name frcEvent =
-        { frcEvent with
-              FrcEvent.Name = name }
+    let changeName name frcEvent = { frcEvent with FrcEvent.Name = name }

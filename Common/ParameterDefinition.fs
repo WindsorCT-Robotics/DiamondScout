@@ -21,13 +21,24 @@ type ParameterSpec =
     | RadialSelection of options: string list * defaultChoice: int
     | MultiSelect of options: string list * defaultChoices: int list
     | Checkbox of defaultState: bool
-    
+
+[<RequireQualifiedAccess>]
+type ParameterCategory =
+    | Pit
+    | Match
+
 type ParameterDefinition =
     { Name: ParameterDefinitionName
-      Spec: ParameterSpec }
+      Spec: ParameterSpec
+      Category: ParameterCategory }
 
 [<RequireQualifiedAccess>]
 module ParameterDefinition =
-    let create name spec = { Name = name; Spec = spec }
+    let create name spec category =
+        { Name = name
+          Spec = spec
+          Category = category }
+
     let withName name (param: ParameterDefinition) = { param with Name = name }
     let withSpec spec (param: ParameterDefinition) = { param with Spec = spec }
+    let withCategory category (param: ParameterDefinition) = { param with Category = category }

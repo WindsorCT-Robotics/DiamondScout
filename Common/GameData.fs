@@ -1,6 +1,7 @@
 namespace ParagonRobotics.DiamondScout.Common.Functional
 
 open System
+open FsToolkit.ErrorHandling
 open ParagonRobotics.DiamondScout.Common
 
 [<Struct>]
@@ -25,6 +26,67 @@ type private GameState =
 
 [<RequireQualifiedAccess>]
 module Game =
+    [<RequireQualifiedAccess>]
+    type GameError =
+        | ParameterDoesNotExist of ParameterDefinitionId
+        | NotAPitParameter of ParameterDefinitionId
+        | NotAMatchParameter of ParameterDefinitionId
+        | InvalidParameterValue of ParameterDefinitionId * ParameterValue
+        | MissingParameterDefinitions of ParameterDefinitionId list
+        | ExtraParameterDefinitions of ParameterDefinitionId list
+        | RobotError of Robot.Error
+        | ScoutingResultError of ScoutingResult.Error
+
+    [<RequireQualifiedAccess>]
+    module GameValidation =
+        let parameterValueMatches
+            (defs: Map<ParameterDefinitionId, ParameterDefinition>)
+            (id: ParameterDefinitionId)
+            (value: ParameterValue)
+            =
+            match defs.TryFind id with
+            | Some def ->
+                if ParameterValue.isValid def.Spec value then
+                    Validation.ok value
+                else
+                    GameError.InvalidParameterValue(id, value) |> Validation.error
+            | Microsoft.FSharp.Core.Option.None -> GameError.ParameterDoesNotExist id |> Validation.error
+
+        let parametersMatch
+            (defs: Map<ParameterDefinitionId, ParameterDefinition>)
+            (category: ParameterCategory)
+            (actualParams: Map<ParameterDefinitionId, ParameterValue>)
+            =
+            let expectedDefs = defs |> Map.filter (fun _ def -> def.Category = category)
+            let expectedIds = expectedDefs |> Map.keys |> Set.ofSeq
+            let actualIds = actualParams |> Map.keys |> Set.ofSeq
+
+            let missing = Set.difference expectedIds actualIds |> Set.toList
+            let extra = Set.difference actualIds expectedIds |> Set.toList
+
+            if not (List.isEmpty missing) then
+                GameError.MissingParameterDefinitions missing |> Validation.error
+            elif not (List.isEmpty extra) then
+                GameError.ExtraParameterDefinitions extra |> Validation.error
+            else
+                let results =
+                    actualParams
+                    |> Map.toSeq
+                    |> Seq.map (fun (id, value) -> parameterValueMatches defs id value)
+                    |> Seq.toList
+
+                let errors =
+                    results
+                    |> List.choose (function
+                        | Error e -> Microsoft.FSharp.Core.Option.Some e
+                        | Ok _ -> Microsoft.FSharp.Core.Option.None)
+                    |> List.concat
+
+                if List.isEmpty errors then
+                    Validation.ok actualParams
+                else
+                    Result.Error errors
+
     [<RequireQualifiedAccess>]
     module EventArgs =
         type Started = { Name: GameName; Year: DateOnly }
@@ -60,7 +122,7 @@ module Game =
                           EventId: FrcEventId
                           MatchId: MatchId
                           MatchNumber: MatchNumber }
-                        
+
                     type Scouted =
                         { DistrictCode: FrcDistrictCode
                           EventId: FrcEventId
@@ -113,8 +175,7 @@ module Game =
                 { SubPhaseId: SubPhaseId
                   SubPhaseDescription: SubPhaseDescription }
 
-            type Removed =
-                { SubPhaseId: SubPhaseId }
+            type Removed = { SubPhaseId: SubPhaseId }
 
         [<RequireQualifiedAccess>]
         module GamePiece =
@@ -167,9 +228,7 @@ module Game =
                 { Id: InfractionId
                   Severity: Foul option }
 
-            type CardChanged =
-                { Id: InfractionId
-                  Card: Card option }
+            type CardChanged = { Id: InfractionId; Card: Card option }
 
         [<RequireQualifiedAccess>]
         module PitResult =
@@ -179,23 +238,18 @@ module Game =
                   Name: RobotName
                   EndgameCapable: EndgameCapable
                   Drivetrain: Drivetrain
+                  PitScoutingParameters: Map<ParameterDefinitionId, ParameterValue>
                   Notes: Map<NoteId, Note> }
 
-            type RobotNameChanged =
-                { Id: RobotId
-                  Name: RobotName }
+            type RobotNameChanged = { Id: RobotId; Name: RobotName }
 
-            type TeamChanged =
-                { Id: RobotId
-                  TeamId: TeamId }
+            type TeamChanged = { Id: RobotId; TeamId: TeamId }
 
             type EndgameCapabilitiesChanged =
                 { Id: RobotId
                   EndgameCapable: EndgameCapable }
 
-            type DrivetrainChanged =
-                { Id: RobotId
-                  Drivetrain: Drivetrain }
+            type DrivetrainChanged = { Id: RobotId; Drivetrain: Drivetrain }
 
             type NoteAdded =
                 { Id: RobotId
@@ -208,16 +262,15 @@ module Game =
                   NoteId: NoteId
                   Text: NoteContent }
 
-            type NoteRemoved =
-                { Id: RobotId
-                  NoteId: NoteId }
+            type NoteRemoved = { Id: RobotId; NoteId: NoteId }
 
         [<RequireQualifiedAccess>]
         module ParameterDefinition =
             type Defined =
                 { Id: ParameterDefinitionId
                   Name: ParameterDefinitionName
-                  Spec: ParameterSpec }
+                  Spec: ParameterSpec
+                  Category: ParameterCategory }
 
             type NameChanged =
                 { Id: ParameterDefinitionId
@@ -299,8 +352,7 @@ module Game =
             | SpecChanged of EventArgs.ParameterDefinition.SpecChanged
 
         [<RequireQualifiedAccess>]
-        type Parameter =
-            | ValueSet of EventArgs.Parameter.ValueSet
+        type Parameter = ValueSet of EventArgs.Parameter.ValueSet
 
         [<RequireQualifiedAccess>]
         type Game =
@@ -341,57 +393,57 @@ module Game =
                           Name = args.DistrictName
                           Events = Map.empty }
 
-                    { game with FrcDistricts = Map.add args.DistrictCode newDistrict game.FrcDistricts }
+                    { game with
+                        FrcDistricts = Map.add args.DistrictCode newDistrict game.FrcDistricts }
                     |> GameState.GameStarted
                 | District.NameChanged args ->
-                    { game with FrcDistricts = game.FrcDistricts |> Map.change args.DistrictCode  (Option.map (fun d -> {d with Name = args.DistrictName })) }
+                    { game with
+                        FrcDistricts =
+                            game.FrcDistricts
+                            |> Map.change args.DistrictCode (Option.map (fun d -> { d with Name = args.DistrictName })) }
                     |> GameState.GameStarted
                 | District.FrcEventEvent frcEventEvent ->
                     let changeFrcEvent eventId transform maybeDistrict =
                         maybeDistrict
-                        |> Option.map (fun district -> 
+                        |> Option.map (fun district ->
                             { district with
-                                  FrcDistrict.Events =
-                                      district.Events
-                                      |> Map.change eventId (Option.map transform) })
-                    
+                                FrcDistrict.Events = district.Events |> Map.change eventId (Option.map transform) })
+
                     let addFrcEvent eventId event maybeDistrict =
                         maybeDistrict
                         |> Option.map (fun district ->
                             { district with
-                                  FrcDistrict.Events =
-                                      district.Events
-                                      |> Map.add eventId event })
-                        
+                                FrcDistrict.Events = district.Events |> Map.add eventId event })
+
                     match frcEventEvent with
                     | FrcEvent.Registered args ->
                         { game with
-                              FrcDistricts =
-                                  game.FrcDistricts
-                                  |> Map.change
-                                      args.DistrictCode
-                                      (addFrcEvent args.EventId (FrcEvent.create args.EventName)) }
+                            FrcDistricts =
+                                game.FrcDistricts
+                                |> Map.change
+                                    args.DistrictCode
+                                    (addFrcEvent args.EventId (FrcEvent.create args.EventName)) }
                     | FrcEvent.NameChanged args ->
                         { game with
-                              FrcDistricts =
-                                  game.FrcDistricts
-                                  |> Map.change
-                                      args.DistrictCode
-                                      (changeFrcEvent args.EventId (FrcEvent.changeName args.EventName))}
+                            FrcDistricts =
+                                game.FrcDistricts
+                                |> Map.change
+                                    args.DistrictCode
+                                    (changeFrcEvent args.EventId (FrcEvent.changeName args.EventName)) }
                     | FrcEvent.MatchEvent matchEvent ->
-                        let addMatch matchId  maybeEvent =
-                            maybeEvent
-                            |> Option.map (fun event ->
-                                { event with
-                                      Matches = event.Matches |> FrcEvent.addMatch (Match.createMatch matchNumber (MatchScoutingResults []) })
                         match matchEvent with
                         | Match.Registered args ->
+                            let _addMatch event =
+                                Match.createMatch
+                                    TournamentLevel.Qualification
+                                    args.MatchNumber
+                                    MatchScoutingResults.NotStarted
+                                |> fun m -> FrcEvent.addMatch args.MatchId m event
+
                             { game with
-                                  FrcDistricts =
-                                      game.FrcDistricts
-                                      |> Map.change
-                                          args.DistrictCode
-                                          ((changeFrcEvent args.EventId  }
+                                FrcDistricts =
+                                    game.FrcDistricts
+                                    |> Map.change args.DistrictCode (changeFrcEvent args.EventId _addMatch) }
+                        | _ -> { game with Name = game.Name } // TODO: handle other match events
 
                     |> GameState.GameStarted
-                    
