@@ -52,8 +52,6 @@ type Match =
 module Match =
     [<RequireQualifiedAccess>]
     type Error =
-        | ScoutingError of scoutingError: ScoutingResult.Error
-        | MatchAlreadyFinalized
         | MatchNotFinalized of unfinalizedMatchResults: AllianceTeam
 
     module private OnlyIf =
@@ -110,6 +108,10 @@ module Match =
             { matchData with
                 MatchScoutResults.BlueAlliance.Team3 = newScoutingResult }
 
-    let setWinner winner matchData =
-        { matchData with
-            Winner = WinningAlliance.Winner winner }
+    let setWinner winner matchData = validation {
+        let! matchData = OnlyIf.matchIsFinalized matchData
+        
+        return
+            { matchData with
+                Winner = WinningAlliance.Winner winner }
+    }
