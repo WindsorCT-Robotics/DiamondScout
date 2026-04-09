@@ -48,7 +48,7 @@ type Robot =
       EndgameCapable: EndgameCapable
       Drivetrain: Drivetrain
       PitScoutingParameters: Map<ParameterDefinitionId, ParameterValue>
-      Notes: Map<NoteId, Note> }
+      Notes: NoteId list }
 
 [<RequireQualifiedAccess>]
 module Robot =
@@ -56,7 +56,8 @@ module Robot =
         | ParameterExists of ParameterDefinitionId
         | ParameterDoesNotExist of ParameterDefinitionId
         | RobotNameEmpty
-        | NoteError of Note.Error
+        | DuplicateNote of noteId: NoteId
+        | NoteNotFound of noteId: NoteId
 
     [<RequireQualifiedAccess>]
     module private OnlyIf =
@@ -74,6 +75,16 @@ module Robot =
             match String.IsNullOrWhiteSpace name with
             | true -> RobotNameEmpty |> Validation.error
             | false -> robotName |> Validation.ok
+            
+        let noteIdUnique robot noteId =
+            match List.contains noteId robot.Notes with
+            | true -> noteId |> DuplicateNote |> Validation.error
+            | false -> noteId |> Validation.ok
+            
+        let noteExists robot noteId =
+            match List.contains noteId robot.Notes with
+            | true -> noteId |> Validation.ok
+            | false -> noteId |> NoteNotFound |> Validation.error
 
     let createWithParameters name team endgameCapability pitScoutingParams drivetrain =
         validation {
@@ -85,7 +96,7 @@ module Robot =
                   EndgameCapable = endgameCapability
                   Drivetrain = drivetrain
                   PitScoutingParameters = pitScoutingParams
-                  Notes = Map.empty }
+                  Notes = [] }
         }
 
     let create name team endgameCapability drivetrain =
@@ -97,18 +108,23 @@ module Robot =
 
     let withDrivetrain drivetrain robot = { robot with Drivetrain = drivetrain }
 
-    let addNote noteId userId noteContents robot =
+    let addNote noteId robot =
         validation {
-            let! note = Note.create userId noteContents
-
+            let! noteId = OnlyIf.noteIdUnique robot noteId
+            
             return
                 { robot with
-                    Robot.Notes = robot.Notes.Add(noteId, note) }
+                    Robot.Notes = noteId :: robot.Notes }
         }
 
     let removeNote noteId robot =
-        { robot with
-            Robot.Notes = robot.Notes.Remove(noteId) }
+        validation {
+            let! noteId = OnlyIf.noteExists robot noteId
+            
+            return
+                { robot with
+                    Robot.Notes = robot.Notes |> List.filter (fun id -> id <> noteId) }
+        }
 
     let setPitScoutingParameter parameterId value robot =
         validation {

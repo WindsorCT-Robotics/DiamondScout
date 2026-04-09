@@ -17,7 +17,7 @@ type Game =
           Infractions: Map<InfractionId, Infraction>
           PitResults: Map<RobotId, Robot>
           ParameterDefinitions: Map<ParameterDefinitionId, ParameterDefinition>
-          Parameters: Map<RobotId, Map<ParameterDefinitionId, ParameterValue>> }
+          Notes: Map<NoteId, Note> }
 
 [<RequireQualifiedAccess>]
 type private GameState =
@@ -121,19 +121,20 @@ module Game =
                         { DistrictCode: FrcDistrictCode
                           EventId: FrcEventId
                           MatchId: MatchId
+                          TournamentLevel: TournamentLevel
                           MatchNumber: MatchNumber }
 
                     type Scouted =
                         { DistrictCode: FrcDistrictCode
                           EventId: FrcEventId
-                          MatchNumber: MatchNumber
+                          MatchId: MatchId
                           Team: AllianceTeam
                           Result: ScoutingData }
 
                     type NoteAdded =
                         { DistrictCode: FrcDistrictCode
                           EventId: FrcEventId
-                          MatchNumber: MatchNumber
+                          MatchId: MatchId
                           Team: AllianceTeam
                           NoteId: NoteId
                           UserId: UserId
@@ -142,7 +143,7 @@ module Game =
                     type NoteTextChanged =
                         { DistrictCode: FrcDistrictCode
                           EventId: FrcEventId
-                          MatchNumber: MatchNumber
+                          MatchId: MatchId
                           Team: AllianceTeam
                           NoteId: NoteId
                           Text: NoteContent }
@@ -150,13 +151,14 @@ module Game =
                     type NoteRemoved =
                         { DistrictCode: FrcDistrictCode
                           EventId: FrcEventId
-                          MatchNumber: MatchNumber
+                          MatchId: MatchId
                           Team: AllianceTeam
                           NoteId: NoteId }
 
                     type Concluded =
                         { DistrictCode: FrcDistrictCode
                           EventId: FrcEventId
+                          MatchId: MatchId
                           Winner: Alliance }
 
         [<RequireQualifiedAccess>]
@@ -239,7 +241,7 @@ module Game =
                   EndgameCapable: EndgameCapable
                   Drivetrain: Drivetrain
                   PitScoutingParameters: Map<ParameterDefinitionId, ParameterValue>
-                  Notes: Map<NoteId, Note> }
+                  Notes: NoteId list }
 
             type RobotNameChanged = { Id: RobotId; Name: RobotName }
 
@@ -378,7 +380,7 @@ module Game =
                   Infractions = Map.empty
                   PitResults = Map.empty
                   ParameterDefinitions = Map.empty
-                  Parameters = Map.empty }
+                  Notes = Map.empty }
                 |> GameState.GameStarted
             | GameState.GameNotStarted, _ -> state
             | GameState.GameStarted game, Game.NameChanged args ->
@@ -444,6 +446,98 @@ module Game =
                                 FrcDistricts =
                                     game.FrcDistricts
                                     |> Map.change args.DistrictCode (changeFrcEvent args.EventId _addMatch) }
+                        | Match.NoteAdded args ->
+                            let (AllianceTeam (alliance, teamNumber)) = args.Team
+
+                            let updateMatch m =
+                                let result = Match.getScoutingResult alliance teamNumber m
+                                let newResult = ScoutingResult.addNote args.NoteId result
+                                match newResult with
+                                | Ok nr -> Match.updateScoutingResult alliance teamNumber m nr
+                                | Error _ -> m
+
+                            { game with
+                                Notes =
+                                    game.Notes
+                                    |> Map.add args.NoteId { UserId = args.UserId; Text = args.Text }
+                                FrcDistricts =
+                                    game.FrcDistricts
+                                    |> Map.change
+                                        args.DistrictCode
+                                        (changeFrcEvent args.EventId (FrcEvent.changeMatch args.MatchId updateMatch)) }
+
+                        | Match.NoteTextChanged args ->
+                            { game with
+                                Notes =
+                                    game.Notes
+                                    |> Map.change args.NoteId (Option.map (fun n -> { n with Text = args.Text })) }
+
+                        | Match.NoteRemoved args ->
+                            let (AllianceTeam (alliance, teamNumber)) = args.Team
+
+                            let updateMatch m =
+                                let result = Match.getScoutingResult alliance teamNumber m
+                                let newResult = ScoutingResult.removeNote args.NoteId result
+                                match newResult with
+                                | Ok nr -> Match.updateScoutingResult alliance teamNumber m nr
+                                | Error _ -> m
+
+                            { game with
+                                Notes = game.Notes |> Map.remove args.NoteId
+                                FrcDistricts =
+                                    game.FrcDistricts
+                                    |> Map.change
+                                        args.DistrictCode
+                                        (changeFrcEvent args.EventId (FrcEvent.changeMatch args.MatchId updateMatch)) }
                         | _ -> { game with Name = game.Name } // TODO: handle other match events
 
                     |> GameState.GameStarted
+
+            | GameState.GameStarted game, Game.PitResultEvent pitResultEvent ->
+                match pitResultEvent with
+                | PitResult.Scouted args ->
+                    let robot =
+                        { Name = args.Name
+                          Team = args.TeamId
+                          EndgameCapable = args.EndgameCapable
+                          Drivetrain = args.Drivetrain
+                          PitScoutingParameters = args.PitScoutingParameters
+                          Notes = args.Notes }
+
+                    { game with
+                        PitResults = game.PitResults |> Map.add args.Id robot }
+                | PitResult.NoteAdded args ->
+                    let note = { UserId = args.UserId; Text = args.Text }
+                    let robot = game.PitResults |> Map.tryFind args.Id
+                    let updatedRobot =
+                        robot |> Option.map (fun r ->
+                            match Robot.addNote args.NoteId r with
+                            | Ok ur -> ur
+                            | Error _ -> r)
+
+                    { game with
+                        Notes = game.Notes |> Map.add args.NoteId note
+                        PitResults =
+                            match updatedRobot with
+                            | Microsoft.FSharp.Core.Option.Some ur -> game.PitResults |> Map.add args.Id ur
+                            | Microsoft.FSharp.Core.Option.None -> game.PitResults }
+                | PitResult.NoteTextChanged args ->
+                    { game with
+                        Notes = game.Notes |> Map.change args.NoteId (Option.map (fun n -> { n with Text = args.Text })) }
+                | PitResult.NoteRemoved args ->
+                    let robot = game.PitResults |> Map.tryFind args.Id
+                    let updatedRobot =
+                        robot |> Option.map (fun r ->
+                            match Robot.removeNote args.NoteId r with
+                            | Ok ur -> ur
+                            | Error _ -> r)
+
+                    { game with
+                        Notes = game.Notes |> Map.remove args.NoteId
+                        PitResults =
+                            match updatedRobot with
+                            | Microsoft.FSharp.Core.Option.Some ur -> game.PitResults |> Map.add args.Id ur
+                            | Microsoft.FSharp.Core.Option.None -> game.PitResults }
+                | _ -> game
+                |> GameState.GameStarted
+            | GameState.GameStarted _ as gameState, _ -> gameState

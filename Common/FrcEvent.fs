@@ -23,3 +23,9 @@ module FrcEvent =
             Matches = event.Matches |> Map.remove matchId }
 
     let changeName name frcEvent = { frcEvent with FrcEvent.Name = name }
+
+    let changeMatch matchId transform frcEvent =
+        { frcEvent with
+            Matches =
+                frcEvent.Matches
+                |> Map.change matchId (Option.map transform)}

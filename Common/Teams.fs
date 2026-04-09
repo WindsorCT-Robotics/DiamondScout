@@ -25,7 +25,7 @@ type TeamData =
         /// The team's name.
         TeamName: TeamName
         /// Notes about the team.
-        Notes: Map<NoteId, Note>
+        Notes: NoteId list
     }
 
 [<RequireQualifiedAccess>]
@@ -39,7 +39,7 @@ module Team =
     type Command =
         | Register of teamNumber: TeamNumber * teamName: TeamName
         | ChangeName of teamName: TeamName
-        | AddNote of noteId: NoteId * userId: UserId * noteContent: NoteContent
+        | AddNote of noteId: NoteId
         | RemoveNote of noteId: NoteId
 
     type Error =
@@ -48,12 +48,11 @@ module Team =
         | TeamNameEmpty
         | DuplicateNote of noteId: NoteId
         | NoteNotFound of noteId: NoteId
-        | NoteError of Note.Error
 
     type Event =
         | Registered of teamNumber: TeamNumber * teamName: TeamName
         | TeamNameChanged of teamName: TeamName
-        | NoteAdded of noteId: NoteId * userId: UserId * noteContent: NoteContent
+        | NoteAdded of noteId: NoteId
         | NoteRemoved of noteId: NoteId
 
     module private Event =
@@ -64,25 +63,25 @@ module Team =
                 | Team.Unregistered ->
                     { TeamNumber = teamNumber
                       TeamName = teamName
-                      Notes = Map.empty }
+                      Notes = [] }
                     |> Team.Registered
                 | Team.Registered _ as team -> team
             | TeamNameChanged teamName ->
                 match team with
                 | Team.Registered data -> { data with TeamName = teamName } |> Team.Registered
                 | Team.Unregistered as team -> team
-            | NoteAdded(noteId, userId, noteContent) ->
+            | NoteAdded noteId ->
                 match team with
                 | Team.Registered data ->
                     { data with
-                        Notes = data.Notes.Add(noteId, { UserId = userId; Text = noteContent }) }
+                        Notes = noteId :: data.Notes }
                     |> Team.Registered
                 | Team.Unregistered as team -> team
             | NoteRemoved noteId ->
                 match team with
                 | Team.Registered data ->
                     { data with
-                        Notes = data.Notes.Remove noteId }
+                        Notes = data.Notes |> List.filter (fun id -> id <> noteId) }
                     |> Team.Registered
                 | Team.Unregistered as team -> team
 
@@ -104,12 +103,12 @@ module Team =
             | false -> name |> TeamName |> Validation.ok
 
         let noteIdUnique data id =
-            match data.Notes.ContainsKey id with
+            match List.contains id data.Notes with
             | true -> id |> DuplicateNote |> Validation.error
             | false -> id |> Validation.ok
 
         let noteExists data id =
-            match data.Notes.ContainsKey id with
+            match List.contains id data.Notes with
             | true -> id |> Validation.ok
             | false -> id |> NoteNotFound |> Validation.error
 
@@ -130,13 +129,12 @@ module Team =
 
                     return TeamNameChanged teamName |> List.singleton
                 }
-            | AddNote(noteId, userId, noteContent) ->
+            | AddNote noteId ->
                 validation {
                     let! data = OnlyIf.teamIsRegistered team
                     let! noteId = OnlyIf.noteIdUnique data noteId
-                    let! _ = Note.create userId noteContent |> Validation.mapError NoteError
 
-                    return NoteAdded(noteId, userId, noteContent) |> List.singleton
+                    return NoteAdded noteId |> List.singleton
                 }
             | RemoveNote noteId ->
                 validation {

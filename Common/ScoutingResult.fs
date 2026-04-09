@@ -73,7 +73,7 @@ type ScoutingData =
       Endgame: Endgame
       Breakdowns: Breakdown list
       Infractions: Map<InfractionId, Infraction>
-      Notes: Map<NoteId, Note> }
+      Notes: NoteId list }
 
 [<RequireQualifiedAccess>]
 type ScoutingResult =
@@ -89,7 +89,6 @@ module ScoutingResult =
         | ScoutingInProgress
         | ParameterExists of ParameterDefinitionId
         | ParameterDoesNotExist of ParameterDefinitionId
-        | NoteError of Note.Error
         | DuplicateNote of noteId: NoteId
         | NoteNotFound of noteId: NoteId
         | InvalidTeamId of teamId: TeamId
@@ -129,12 +128,12 @@ module ScoutingResult =
             | false -> ParameterDoesNotExist parameterId |> Validation.error
 
         let noteIdUnique scoutingData noteId =
-            match scoutingData.Notes.ContainsKey noteId with
+            match List.contains noteId scoutingData.Notes with
             | true -> noteId |> DuplicateNote |> Validation.error
             | false -> noteId |> Validation.ok
 
         let noteExists scoutingData noteId =
-            match scoutingData.Notes.ContainsKey noteId with
+            match List.contains noteId scoutingData.Notes with
             | true -> noteId |> Validation.ok
             | false -> noteId |> NoteNotFound |> Validation.error
 
@@ -178,11 +177,11 @@ module ScoutingResult =
                 { Team = team
                   Alliance = alliance
                   Scores = []
-                  Endgame = { Capable = endgameCapability Result = EndgameResult.NotAttempted }
+                  Endgame = { Capable = endgameCapability; Result = EndgameResult.NotAttempted }
                   Breakdowns = []
                   ScoutingParameters = Map.empty
                   Infractions = Map.empty
-                  Notes = Map.empty }
+                  Notes = [] }
                 |> ScoutingResult.Scouting
         }
 
@@ -230,16 +229,13 @@ module ScoutingResult =
                 |> ScoutingResult.Scouting
         }
 
-    let addNote noteId userId noteContent scoutingResult =
+    let addNote noteId scoutingResult =
         validation {
             let! scoutingData = OnlyIf.scoutingIsStarted scoutingResult
-            let! noteId = OnlyIf.noteIdValid noteId
-            let! noteId = OnlyIf.noteIdUnique scoutingData noteId
-            let! note = Note.create userId noteContent |> Validation.mapError NoteError
 
             let updatedData =
                 { scoutingData with
-                    Notes = scoutingData.Notes.Add(noteId, note) }
+                    Notes = noteId :: scoutingData.Notes }
 
             return
                 match scoutingResult with
@@ -251,12 +247,10 @@ module ScoutingResult =
     let removeNote noteId scoutingResult =
         validation {
             let! scoutingData = OnlyIf.scoutingIsStarted scoutingResult
-            let! noteId = OnlyIf.noteIdValid noteId
-            let! noteId = OnlyIf.noteExists scoutingData noteId
 
             let updatedData =
                 { scoutingData with
-                    Notes = scoutingData.Notes.Remove noteId }
+                    Notes = scoutingData.Notes |> List.filter (fun id -> id <> noteId) }
 
             return
                 match scoutingResult with
