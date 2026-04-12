@@ -6,6 +6,7 @@ open FsToolkit.ErrorHandling
 type MatchNumber = MatchNumber of uint
 
 [<Struct>]
+[<RequireQualifiedAccess>]
 type TournamentLevel =
     | None
     | Practice
@@ -15,6 +16,7 @@ type TournamentLevel =
 type WinningAlliance =
     | Undecided
     | Winner of winningAlliance: Alliance
+    | Tie
 
 type AllianceScoutingResults =
     { Team1: ScoutingResult
@@ -42,17 +44,36 @@ type AllianceTeamNumber =
 
 type AllianceTeam = AllianceTeam of Alliance * AllianceTeamNumber
 
+[<Struct>]
+type RedAllianceFinalScore = RedAllianceFinalScore of uint
+
+[<Struct>]
+type BlueAllianceFinalScore = BlueAllianceFinalScore of uint
+
+[<Struct>]
+type RedAllianceFinalRankingPoints = RedAllianceFinalRankingPoints of uint
+
+type FinalScore =
+    { RedAlliance: RedAllianceFinalScore
+      BlueAlliance: BlueAllianceFinalScore }
+    
+type RankingPointsEarned =
+    { RedAlliance: RedAllianceFinalRankingPoints
+      BlueAlliance: RedAllianceFinalRankingPoints }
+
 type Match =
     { MatchNumber: MatchNumber
       TournamentLevel: TournamentLevel
       MatchScoutResults: MatchScoutingResults
+      FinalScore: FinalScore option
+      RankingPoints: RankingPointsEarned option
       Winner: WinningAlliance }
 
 [<RequireQualifiedAccess>]
 module Match =
     [<RequireQualifiedAccess>]
     type Error =
-        | MatchNotFinalized of unfinalizedMatchResults: AllianceTeam
+        | MatchNotFinalized of unfinalizedMatchResult: AllianceTeam
 
     module private OnlyIf =
         let matchIsFinalized (matchData: Match) =
@@ -76,6 +97,8 @@ module Match =
         { MatchNumber = matchNumber
           TournamentLevel = tournamentLevel
           MatchScoutResults = matchScoutResults
+          FinalScore = None
+          RankingPoints = None
           Winner = Undecided }
 
     let getScoutingResult alliance team matchData =
@@ -87,7 +110,7 @@ module Match =
         | Blue, Team2 -> matchData.MatchScoutResults.BlueAlliance.Team2
         | Blue, Team3 -> matchData.MatchScoutResults.BlueAlliance.Team3
 
-    let updateScoutingResult alliance team matchData newScoutingResult =
+    let withScoutingResult alliance team matchData newScoutingResult =
         match (alliance, team) with
         | Red, Team1 ->
             { matchData with
@@ -107,11 +130,9 @@ module Match =
         | Blue, Team3 ->
             { matchData with
                 MatchScoutResults.BlueAlliance.Team3 = newScoutingResult }
-
-    let setWinner winner matchData = validation {
-        let! matchData = OnlyIf.matchIsFinalized matchData
+            
+    let withFinalScore matchData finalScore =
+        { matchData with FinalScore = finalScore }
         
-        return
-            { matchData with
-                Winner = WinningAlliance.Winner winner }
-    }
+    let withRankingPoints matchData rankingPoints =
+        { matchData with RankingPoints = rankingPoints }

@@ -72,7 +72,7 @@ type ScoutingData =
       ScoutingParameters: Map<ParameterDefinitionId, ParameterValue>
       Endgame: Endgame
       Breakdowns: Breakdown list
-      Infractions: Map<InfractionId, Infraction>
+      Infractions: InfractionId list
       Notes: NoteId list }
 
 [<RequireQualifiedAccess>]
@@ -180,7 +180,7 @@ module ScoutingResult =
                   Endgame = { Capable = endgameCapability; Result = EndgameResult.NotAttempted }
                   Breakdowns = []
                   ScoutingParameters = Map.empty
-                  Infractions = Map.empty
+                  Infractions = List.empty
                   Notes = [] }
                 |> ScoutingResult.Scouting
         }
@@ -208,14 +208,14 @@ module ScoutingResult =
                 |> ScoutingResult.Scouting
         }
 
-    let recordInfraction infractionId infractionData scoutingResult =
+    let recordInfraction infractionId scoutingResult =
         validation {
             let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
             let! infractionId = OnlyIf.infractionIdValid infractionId
 
             return
                 { scoutingData with
-                    Infractions = scoutingData.Infractions.Add(infractionId, infractionData) }
+                    Infractions = infractionId :: scoutingData.Infractions }
                 |> ScoutingResult.Scouting
         }
 
@@ -229,7 +229,7 @@ module ScoutingResult =
                 |> ScoutingResult.Scouting
         }
 
-    let addNote noteId scoutingResult =
+    let addOrReplaceNote noteId scoutingResult =
         validation {
             let! scoutingData = OnlyIf.scoutingIsStarted scoutingResult
 
@@ -241,7 +241,7 @@ module ScoutingResult =
                 match scoutingResult with
                 | ScoutingResult.Scouting _ -> ScoutingResult.Scouting updatedData
                 | ScoutingResult.Finalized _ -> ScoutingResult.Finalized updatedData
-                | _ -> scoutingResult
+                | _ -> invalidOp "There is no scouting result to add a note to."
         }
 
     let removeNote noteId scoutingResult =
@@ -256,7 +256,7 @@ module ScoutingResult =
                 match scoutingResult with
                 | ScoutingResult.Scouting _ -> ScoutingResult.Scouting updatedData
                 | ScoutingResult.Finalized _ -> ScoutingResult.Finalized updatedData
-                | _ -> scoutingResult
+                | _ -> invalidOp "There is no scouting result to remove a note from."
         }
 
     let setScoutingParameterValue parameterId value scoutingResult =
@@ -267,11 +267,11 @@ module ScoutingResult =
 
             return
                 { scoutingData with
-                    ScoutingParameters = scoutingData.ScoutingParameters.Add(parameterId, value) }
+                    ScoutingParameters = scoutingData.ScoutingParameters |> Map.add parameterId value }
                 |> ScoutingResult.Scouting
         }
 
-    let removeScoutingParameterValue parameterId scoutingResult =
+    let unsetScoutingParameterValue parameterId scoutingResult =
         validation {
             let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
             let! parameterId = OnlyIf.parameterIdValid parameterId
@@ -279,9 +279,23 @@ module ScoutingResult =
 
             return
                 { scoutingData with
-                    ScoutingParameters = scoutingData.ScoutingParameters.Remove(parameterId) }
+                    ScoutingParameters = scoutingData.ScoutingParameters |> Map.remove parameterId }
                 |> ScoutingResult.Scouting
         }
 
     let mustBeFinalized scoutingResult =
         OnlyIf.scoutingIsFinalized scoutingResult
+
+    let finalize scoutingData =
+        validation {
+            let! scoutingData = OnlyIf.scoutingIsInProgress scoutingData
+            
+            return ScoutingResult.Finalized scoutingData
+        }
+    
+    let reopen scoutingData =
+        validation {
+            let! scoutingData = OnlyIf.scoutingIsFinalized scoutingData
+            
+            return ScoutingResult.Scouting scoutingData
+        }

@@ -1,8 +1,6 @@
 namespace ParagonRobotics.DiamondScout.Common.Functional
 
 open System
-open System.Collections.Generic
-open System.Linq
 open FsToolkit.ErrorHandling
 
 [<Struct>]
@@ -40,7 +38,7 @@ module Infraction =
 
     module private OnlyIf =
         let nameNotEmpty (InfractionName name as infractionName) =
-            match System.String.IsNullOrWhiteSpace name with
+            match String.IsNullOrWhiteSpace name with
             | true -> InfractionNameEmpty |> Validation.error
             | false -> infractionName |> Validation.ok
 

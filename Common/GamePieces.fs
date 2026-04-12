@@ -8,8 +8,7 @@ type GamePieceName = GamePieceName of string
 type GamePiece =
     private
         { Name: GamePieceName
-          SubPhaseScoreValues: SubPhaseMap<ScoreValue>
-          RankingPointGrants: RankingPointGrant list }
+          ScoreValues: Map<TimeframeId, ScoreValue> }
 
 [<RequireQualifiedAccess>]
 module GamePiece =
@@ -21,14 +20,13 @@ module GamePiece =
             | true -> GamePieceNameEmpty |> Validation.error
             | false -> gamePieceName |> Validation.ok
 
-    let create name values rankPoints =
+    let create name values =
         validation {
             let! name = OnlyIf.nameNotEmpty name
 
             return
                 { Name = name
-                  SubPhaseScoreValues = values
-                  RankingPointGrants = rankPoints }
+                  ScoreValues = values }
         }
 
     let withName name piece =
@@ -39,6 +37,4 @@ module GamePiece =
 
     let changeValue value piece =
         { piece with
-            GamePiece.SubPhaseScoreValues = value }
-
-    let changeRankPoints rp piece = { piece with RankingPointGrants = rp }
+            GamePiece.ScoreValues = value }

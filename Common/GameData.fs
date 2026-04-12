@@ -12,7 +12,7 @@ type Game =
         { Year: DateOnly
           Name: GameName
           FrcDistricts: Map<FrcDistrictCode, FrcDistrict>
-          SubPhases: Map<SubPhaseId, SubPhase>
+          Periods: Periods
           GamePieces: Map<GamePieceId, GamePiece>
           Infractions: Map<InfractionId, Infraction>
           PitResults: Map<RobotId, Robot>
@@ -162,20 +162,20 @@ module Game =
                           Winner: Alliance }
 
         [<RequireQualifiedAccess>]
-        module SubPhase =
+        module Timeframe =
             type Defined =
-                { SubPhaseId: SubPhaseId
-                  SubPhaseName: SubPhaseName
-                  SubPhaseDescription: SubPhaseDescription
-                  ParentPhase: Phase }
+                { Period: Period
+                  SubPhaseName: TimeframeName
+                  SubPhaseDescription: TimeframeDescription
+                  ParentPhase: PeriodData }
 
             type NameChanged =
                 { SubPhaseId: SubPhaseId
-                  SubPhaseName: SubPhaseName }
+                  SubPhaseName: TimeframeName }
 
             type DescriptionChanged =
                 { SubPhaseId: SubPhaseId
-                  SubPhaseDescription: SubPhaseDescription }
+                  SubPhaseDescription: TimeframeDescription }
 
             type Removed = { SubPhaseId: SubPhaseId }
 
@@ -314,10 +314,10 @@ module Game =
 
         [<RequireQualifiedAccess>]
         type SubPhase =
-            | Defined of EventArgs.SubPhase.Defined
-            | NameChanged of EventArgs.SubPhase.NameChanged
-            | DescriptionChanged of EventArgs.SubPhase.DescriptionChanged
-            | Removed of EventArgs.SubPhase.Removed
+            | Defined of EventArgs.Timeframe.Defined
+            | NameChanged of EventArgs.Timeframe.NameChanged
+            | DescriptionChanged of EventArgs.Timeframe.DescriptionChanged
+            | Removed of EventArgs.Timeframe.Removed
 
         [<RequireQualifiedAccess>]
         type GamePiece =
@@ -440,7 +440,7 @@ module Game =
                                     TournamentLevel.Qualification
                                     args.MatchNumber
                                     MatchScoutingResults.NotStarted
-                                |> fun m -> FrcEvent.addMatch args.MatchId m event
+                                |> fun m -> FrcEvent.addOrReplaceMatch args.MatchId m event
 
                             { game with
                                 FrcDistricts =
@@ -451,9 +451,9 @@ module Game =
 
                             let updateMatch m =
                                 let result = Match.getScoutingResult alliance teamNumber m
-                                let newResult = ScoutingResult.addNote args.NoteId result
+                                let newResult = ScoutingResult.addOrReplaceNote args.NoteId result
                                 match newResult with
-                                | Ok nr -> Match.updateScoutingResult alliance teamNumber m nr
+                                | Ok nr -> Match.withScoutingResult alliance teamNumber m nr
                                 | Error _ -> m
 
                             { game with
@@ -479,7 +479,7 @@ module Game =
                                 let result = Match.getScoutingResult alliance teamNumber m
                                 let newResult = ScoutingResult.removeNote args.NoteId result
                                 match newResult with
-                                | Ok nr -> Match.updateScoutingResult alliance teamNumber m nr
+                                | Ok nr -> Match.withScoutingResult alliance teamNumber m nr
                                 | Error _ -> m
 
                             { game with
