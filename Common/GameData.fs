@@ -11,11 +11,11 @@ type Game =
     private
         { Year: DateOnly
           Name: GameName
-          FrcDistricts: Map<FrcDistrictCode, FrcDistrict>
           Periods: Periods
           GamePieces: Map<GamePieceId, GamePiece>
           Infractions: Map<InfractionId, Infraction>
           PitResults: Map<RobotId, Robot>
+          ScoutingResults: Map<ScoutingResultId, ScoutingResult>
           ParameterDefinitions: Map<ParameterDefinitionId, ParameterDefinition>
           Notes: Map<NoteId, Note> }
 

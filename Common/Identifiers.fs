@@ -66,22 +66,13 @@ type RobotId =
     member this.Value = let (RobotId guid) = this in guid
 
 [<Struct>]
-type MatchId =
+type ScoutingResultId =
     private
-    | MatchId of Guid
+    | ScoutingResultId of Guid
 
-    static member Zero = MatchId Guid.Empty
-    static member Create() = Guid.CreateVersion7() |> MatchId
-    member this.Value = let (MatchId guid) = this in guid
-
-[<Struct>]
-type FrcEventId =
-    private
-    | FrcEventId of Guid
-
-    static member Zero = FrcEventId Guid.Empty
-    static member Create() = Guid.CreateVersion7() |> FrcEventId
-    member this.Value = let (FrcEventId guid) = this in guid
+    static member Zero = ScoutingResultId Guid.Empty
+    static member Create() = Guid.CreateVersion7() |> ScoutingResultId
+    member this.Value = let (ScoutingResultId guid) = this in guid
 
 [<Struct>]
 type ParameterDefinitionId =

@@ -5,6 +5,41 @@ open FsToolkit.ErrorHandling
 open ParagonRobotics.DiamondScout.Common
 
 [<Struct>]
+type MatchNumber = MatchNumber of uint
+
+[<Struct>]
+[<RequireQualifiedAccess>]
+type TournamentLevel =
+    | None
+    | Practice
+    | Qualification
+    | Playoff
+    
+[<Struct>]
+type DistrictCode = DistrictCode of string
+
+[<Struct>]
+type DistrictName = DistrictName of string
+
+type District = { Code: DistrictCode; Name: DistrictName }
+
+[<Struct>]
+type EventCode = EventCode of string
+
+[<Struct>]
+type EventName = EventName of string
+    
+type FrcEvent =
+    { Code: EventCode
+      Name: EventName }
+    
+type EventMatchDetails =
+    { District: District
+      Event: FrcEvent
+      TournamentLevel: TournamentLevel
+      MatchNumber: MatchNumber }
+
+[<Struct>]
 type Alliance =
     | Red
     | Blue
@@ -67,6 +102,7 @@ type ScoreRecord =
 
 type ScoutingData =
     { Team: TeamId
+      MatchDetails: EventMatchDetails
       Alliance: Alliance
       Scores: ScoreRecord list
       ScoutingParameters: Map<ParameterDefinitionId, ParameterValue>
@@ -168,14 +204,14 @@ module ScoutingResult =
             | ScoutingResult.Scouting _ -> Error.ScoutingInProgress |> Validation.error
             | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
 
-    let startScouting team alliance endgameCapability scoutingResult =
+    let startScouting team alliance endgameCapability matchDetails =
         validation {
-            do! OnlyIf.scoutingIsNotStarted scoutingResult
             let! team = OnlyIf.teamIdValid team
 
             return
                 { Team = team
                   Alliance = alliance
+                  MatchDetails = matchDetails
                   Scores = []
                   Endgame = { Capable = endgameCapability; Result = EndgameResult.NotAttempted }
                   Breakdowns = []
@@ -183,6 +219,16 @@ module ScoutingResult =
                   Infractions = List.empty
                   Notes = [] }
                 |> ScoutingResult.Scouting
+        }
+    
+    let changeMatchDetails matchDetails scoutingResult =
+        validation {
+            match scoutingResult with
+            | ScoutingResult.Scouting scoutingData ->
+                return { scoutingData with MatchDetails = matchDetails } |> ScoutingResult.Scouting
+            | ScoutingResult.Finalized scoutingData ->
+                return { scoutingData with MatchDetails = matchDetails } |> ScoutingResult.Finalized
+            | ScoutingResult.NotStarted -> return! Error.ScoutingNotStarted |> Validation.error
         }
 
     let recordScore phase gamePiece tier scoutingResult =
