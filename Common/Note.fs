@@ -1,5 +1,6 @@
-namespace ParagonRobotics.DiamondScout.Common.Functional
+namespace ParagonRobotics.DiamondScout.Common
 
+open System.Collections.Generic
 open ParagonRobotics.DiamondScout.Common
 open FsToolkit.ErrorHandling
 
@@ -7,39 +8,98 @@ open FsToolkit.ErrorHandling
 type NoteContent = NoteContent of string
 
 type Note =
-    internal
+    private
         { UserId: UserId
-          Text: NoteContent }
+          DateAdded: System.DateTime
+          Content: NoteContent }
 
 [<RequireQualifiedAccess>]
-module Note =
-    type Error =
-        | InvalidUserId of user: UserId
-        | EmptyText
-        | NotFound of noteId: NoteId
-
+type NoteState =
+    | NotCreated
+    | Created of Note
+    
+[<AutoOpen>]
+module Functional =
     [<RequireQualifiedAccess>]
-    module private OnlyIf =
-        let userIdValid userId =
-            match userId = UserId.Zero with
-            | true -> userId |> InvalidUserId |> Validation.error
-            | false -> Validation.ok userId
+    module Note =
+        type Error =
+            | InvalidUserId of user: UserId
+            | EmptyText
+            | NoteNotCreated
+            | NoteAlreadyCreated
 
-        let textNotEmpty (NoteContent text) =
-            match System.String.IsNullOrWhiteSpace text with
-            | true -> Validation.error EmptyText
-            | false -> text |> NoteContent |> Validation.ok
+        type Command =
+            | Create of user: UserId * dateAdded: System.DateTime * content: NoteContent
+            | Edit of content: NoteContent
+            
+        type Event =
+            | Created of user: UserId * dateAdded: System.DateTime * content: NoteContent
+            | Edited of content: NoteContent
 
-    let create userId text =
-        validation {
-            let! userId = OnlyIf.userIdValid userId
-            and! text = OnlyIf.textNotEmpty text
+        [<RequireQualifiedAccess>]
+        module private OnlyIf =
+            let noteCreated noteState  =
+                match noteState with
+                | NoteState.NotCreated -> Validation.error Error.NoteNotCreated
+                | NoteState.Created _ -> Validation.ok ()
 
-            return { UserId = userId; Text = text }
-        }
+            let noteNotCreated noteState =
+                match noteState with
+                | NoteState.NotCreated -> Validation.ok ()
+                | NoteState.Created _ -> Validation.error Error.NoteAlreadyCreated
 
-    let edit text note =
-        validation {
-            let! text = OnlyIf.textNotEmpty text
-            return { note with Text = text }
-        }
+            let userIdValid userId =
+                match userId = UserId.Zero with
+                | true -> userId |> InvalidUserId |> Validation.error
+                | false -> Validation.ok userId
+
+            let textNotEmpty (NoteContent text) =
+                match System.String.IsNullOrWhiteSpace text with
+                | true -> Validation.error EmptyText
+                | false -> text |> NoteContent |> Validation.ok
+                
+        let private evolve note event =
+            match (note, event) with
+            | NoteState.NotCreated, Created(userId, dateAdded, noteContent) ->
+                { UserId = userId; DateAdded = dateAdded; Content = noteContent }
+                |> NoteState.Created
+            | NoteState.NotCreated as notCreated, _ -> notCreated
+            | NoteState.Created _ as note, Created _ -> note
+            | NoteState.Created note, Edited newContent ->
+                { note with Content = newContent }
+                |> NoteState.Created
+
+        let decide command state =
+            match command with
+                | Command.Create(userId, dateAdded, noteContent) ->
+                    validation {
+                        do! OnlyIf.noteNotCreated state |> Validation.map (fun _ -> ())
+                        let! userId = OnlyIf.userIdValid userId
+                        and! noteContent = OnlyIf.textNotEmpty noteContent
+
+                        return [ Event.Created (userId, dateAdded, noteContent) ]
+                    }
+                | Command.Edit noteContent ->
+                    validation {
+                        do! OnlyIf.noteCreated state
+                        let! noteContent = OnlyIf.textNotEmpty noteContent
+                        return [ Event.Edited noteContent ]
+                    }
+        
+        let definition =
+            { Init = NoteState.NotCreated
+              Decide = decide
+              Evolve = evolve }
+            
+type Note with
+    static member Create userId dateAdded content =
+        (Note.Create (userId, dateAdded, content), NoteState.NotCreated) ||> Note.decide |> Validation.map _.ToReadOnlyList()
+        
+    static member Edit content note =
+        (Note.Edit content, note) ||> Note.decide |> Validation.map _.ToReadOnlyList()
+        
+    static member Evolve note (events: IReadOnlyList<Note.Event>) =
+        events
+        |> _.FromReadOnlyList()
+        |> foldEvents Note.definition note
+    

@@ -8,8 +8,8 @@ One of the goals of the app is to teach the programming students Blazor PWA as a
 with .NET, a widely-used enterprise language. With Java and .NET under their belts, the students will have more
 opportunities open to them come graduation.
 
-The main goal of the app is to be a reusable. extensible, flexible app for scouting. The app should record both commmon
-metrics between games, and game-specific metrics that we wish to rank teams on.
+The main goal of the app is to be a reusable, extensible, flexible app for scouting. The app should focus on storing and
+querying each team's performance in each game they participate in.
 
 The app should be usable by other teams for the same purpose if desired; metrics should be customizable per team.
 

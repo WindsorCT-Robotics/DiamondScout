@@ -29,8 +29,8 @@ type Card =
 type Infraction =
     private
         { Name: InfractionName
-          Severity: Foul option
-          Card: Card option }
+          Severity: Foul voption
+          Card: Card voption }
 
 [<RequireQualifiedAccess>]
 module Infraction =
