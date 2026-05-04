@@ -1,13 +1,15 @@
 namespace ParagonRobotics.DiamondScout.Common
 
 open System
+open FsToolkit.ErrorHandling
 
 [<Struct>]
 type NotebookName = NotebookName of string
 
 type Notebook =
     private
-        { Name: NotebookName; Notes: NoteId list }
+    | Closed
+    | Open of {| Name: NotebookName; Notes: NoteId list |}
         
 [<Struct>]
 type NotebookId =
@@ -24,6 +26,9 @@ module Functional =
         type Error =
             | NoteExists of NoteId
             | NoteDoesNotExist of NoteId
+            | NotebookClosed
+            | NotebookAlreadyOpened
+            | NotebookNameEmpty
         
         type Command =
             | Create of name: NotebookName
@@ -35,10 +40,72 @@ module Functional =
             | NoteAdded of NoteId
             | NoteRemoved of NoteId
             
-        let initialState = { Name = String.Empty |> NotebookName; Notes = [] }
+        let private initialState = Closed
         
-        let evolve state event =
-            match event with
-            | Created name -> { state with Name = name; Notes = [] }
-            | NoteAdded note -> { state with Notes = note :: state.Notes }
-            | NoteRemoved note -> { state with Notes = state.Notes |> List.filter (fun item -> item <> note) }
+        let private evolve state event =
+            match (state, event) with
+            | Closed, Created name -> Open {| Name = name; Notes = [] |}
+            | Open data, NoteAdded note -> Open {| data with Notes = note :: data.Notes |}
+            | Open data, NoteRemoved note -> Open {| data with Notes = data.Notes |> List.filter (fun item -> item <> note) |}
+            | _ -> state
+            
+        module private OnlyIf =
+            let noteExists noteId notebook =
+                match notebook with
+                | Open data ->
+                    match List.contains noteId data.Notes with
+                    | true -> Validation.ok noteId
+                    | false -> NoteDoesNotExist noteId |> Validation.error
+                | Closed -> Validation.error NotebookClosed
+                
+            let noteDoesNotExist noteId notebook =
+                match notebook with
+                | Open data ->
+                    match List.contains noteId data.Notes with
+                    | true -> NoteExists noteId |> Validation.error
+                    | false -> Validation.ok noteId
+                | Closed -> Validation.error NotebookClosed
+                
+            let notebookOpen notebook =
+                match notebook with
+                | Open _ -> Validation.ok notebook
+                | Closed -> Validation.error NotebookClosed
+                
+            let notebookClosed notebook =
+                match notebook with
+                | Closed -> Validation.ok notebook
+                | Open _ -> Validation.error NotebookAlreadyOpened
+                
+            let notebookNameNotEmpty (NotebookName notebookName as nb) =
+                match String.IsNullOrWhiteSpace notebookName with
+                | true -> NotebookNameEmpty |> Validation.error
+                | false -> nb |> Validation.ok
+            
+        let private decide command notebook =
+            match (notebook, command) with
+            | Closed, Create notebookName ->
+                validation {
+                    let! notebookName = OnlyIf.notebookNameNotEmpty notebookName
+                    
+                    return [ Created notebookName ]
+                }
+            | _, Create _ -> NotebookAlreadyOpened |> Validation.error
+            | Open _, AddNote noteId ->
+                validation {
+                    let! noteId = OnlyIf.noteDoesNotExist noteId notebook
+                    
+                    return [ NoteAdded noteId ]
+                }
+            | Open _, RemoveNote noteId ->
+                validation {
+                    let! noteId = OnlyIf.noteExists noteId notebook
+                    
+                    return [ NoteRemoved noteId ]
+                }
+            | Closed, _ -> NotebookClosed |> Validation.error
+            
+        let definition =
+            create initialState evolve decide
+            
+type Notebook with
+    

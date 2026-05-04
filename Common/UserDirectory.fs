@@ -51,7 +51,7 @@ module Functional =
 
         [<RequireQualifiedAccess>]
         module private OnlyIf =
-            let usetIdNotZero id =
+            let userIdNotZero id =
                 match id = UserId.Zero with
                 | true -> UserIdIsZero |> Validation.error
                 | false -> Validation.ok id
@@ -80,7 +80,7 @@ module Functional =
                 | Register(id, name) ->
                     validation {
                         let! _ = OnlyIf.userIdIsUnique registry id
-                        and! id = OnlyIf.usetIdNotZero id
+                        and! id = OnlyIf.userIdNotZero id
                         and! name = normalize >> OnlyIf.userNameIsUnique registry <| name
 
                         return Registered(id, name) |> List.singleton
@@ -99,15 +99,15 @@ module Functional =
                         return Deactivated id |> List.singleton
                     }
 
-        let initialState =
+        let private initialState =
             { RegisteredUsers = Set.empty
               UserIdsByName = Map.empty }
 
-        let definition = AggregateDefinition.create initialState Event.evolve Command.decide
+        let definition = create initialState Event.evolve Command.decide
 
 type UserDirectory with
     static member Register (userId: UserId, name: UserName) =
-        (UserDirectory.Command.Register(userId, name), UserDirectory.initialState) ||> UserDirectory.definition.Decide |> Validation.map _.ToReadOnlyList()
+        (UserDirectory.Command.Register(userId, name), UserDirectory.definition.Init) ||> UserDirectory.definition.Decide |> Validation.map _.ToReadOnlyList()
     static member ChangeName (users: UserDirectory, userId: UserId, name: UserName) =
         (UserDirectory.Command.ChangeName(userId, name), users) ||> UserDirectory.definition.Decide |> Validation.map _.ToReadOnlyList()
     static member Deactivate (users: UserDirectory, userId: UserId) =

@@ -1,7 +1,9 @@
-﻿namespace ParagonRobotics.DiamondScout.Common.Functional
+﻿namespace ParagonRobotics.DiamondScout.Common
 
+open System.Collections.Generic
 open FsToolkit.ErrorHandling
 open ParagonRobotics.DiamondScout.Common
+open ParagonRobotics.DiamondScout.Common.Functional.AggregateDefinition
 
 /// A FIRST Robotics Competition team number.
 [<Struct>]
@@ -25,7 +27,7 @@ type TeamData =
         /// The team's name.
         TeamName: TeamName
         /// Notes about the team.
-        Notes: NoteId list
+        Notes: NotebookId
     }
 
 [<RequireQualifiedAccess>]
@@ -34,115 +36,85 @@ type Team =
     | Unregistered
     | Registered of TeamData
 
-[<RequireQualifiedAccess>]
-module Team =
-    type Command =
-        | Register of teamNumber: TeamNumber * teamName: TeamName
-        | ChangeName of teamName: TeamName
-        | AddNote of noteId: NoteId
-        | RemoveNote of noteId: NoteId
-
-    type Error =
-        | TeamAlreadyRegistered
-        | TeamNotRegistered
-        | TeamNameEmpty
-        | DuplicateNote of noteId: NoteId
-        | NoteNotFound of noteId: NoteId
-
-    type Event =
-        | Registered of teamNumber: TeamNumber * teamName: TeamName
-        | TeamNameChanged of teamName: TeamName
-        | NoteAdded of noteId: NoteId
-        | NoteRemoved of noteId: NoteId
-
-    module private Event =
-        let evolve team event =
-            match event with
-            | Registered(teamNumber, teamName) ->
-                match team with
-                | Team.Unregistered ->
-                    { TeamNumber = teamNumber
-                      TeamName = teamName
-                      Notes = [] }
-                    |> Team.Registered
-                | Team.Registered _ as team -> team
-            | TeamNameChanged teamName ->
-                match team with
-                | Team.Registered data -> { data with TeamName = teamName } |> Team.Registered
-                | Team.Unregistered as team -> team
-            | NoteAdded noteId ->
-                match team with
-                | Team.Registered data ->
-                    { data with
-                        Notes = noteId :: data.Notes }
-                    |> Team.Registered
-                | Team.Unregistered as team -> team
-            | NoteRemoved noteId ->
-                match team with
-                | Team.Registered data ->
-                    { data with
-                        Notes = data.Notes |> List.filter (fun id -> id <> noteId) }
-                    |> Team.Registered
-                | Team.Unregistered as team -> team
-
+[<AutoOpen>]
+module Functional =
     [<RequireQualifiedAccess>]
-    module private OnlyIf =
-        let teamIsRegistered team =
-            match team with
-            | Team.Registered team -> team |> Validation.ok
-            | Team.Unregistered -> TeamNotRegistered |> Validation.error
+    module Team =
+        type Command =
+            | Register of teamNumber: TeamNumber * teamName: TeamName * notebook: NotebookId
+            | ChangeName of teamName: TeamName
 
-        let teamIsNotRegistered team =
-            match team with
-            | Team.Registered _ -> TeamAlreadyRegistered |> Validation.error
-            | Team.Unregistered -> team |> Validation.ok
+        type Error =
+            | TeamAlreadyRegistered
+            | TeamNotRegistered
+            | TeamNameEmpty
 
-        let teamNameNotEmpty (TeamName name) =
-            match System.String.IsNullOrWhiteSpace name with
-            | true -> TeamNameEmpty |> Validation.error
-            | false -> name |> TeamName |> Validation.ok
+        type Event =
+            | Registered of teamNumber: TeamNumber * teamName: TeamName * notebook: NotebookId
+            | TeamNameChanged of teamName: TeamName
 
-        let noteIdUnique data id =
-            match List.contains id data.Notes with
-            | true -> id |> DuplicateNote |> Validation.error
-            | false -> id |> Validation.ok
+        module private Event =
+            let evolve team event =
+                match event with
+                | Registered(teamNumber, teamName, notebook) ->
+                    match team with
+                    | Team.Unregistered ->
+                        { TeamNumber = teamNumber
+                          TeamName = teamName
+                          Notes = notebook }
+                        |> Team.Registered
+                    | Team.Registered _ as team -> team
+                | TeamNameChanged teamName ->
+                    match team with
+                    | Team.Registered data -> { data with TeamName = teamName } |> Team.Registered
+                    | Team.Unregistered as team -> team
+                
+        [<RequireQualifiedAccess>]
+        module private OnlyIf =
+            let teamIsRegistered team =
+                match team with
+                | Team.Registered team -> team |> Validation.ok
+                | Team.Unregistered -> TeamNotRegistered |> Validation.error
 
-        let noteExists data id =
-            match List.contains id data.Notes with
-            | true -> id |> Validation.ok
-            | false -> id |> NoteNotFound |> Validation.error
+            let teamIsNotRegistered team =
+                match team with
+                | Team.Registered _ -> TeamAlreadyRegistered |> Validation.error
+                | Team.Unregistered -> team |> Validation.ok
 
-    module private Command =
-        let decide command team =
-            match command with
-            | Register(teamNumber, teamName) ->
-                validation {
-                    let! _ = OnlyIf.teamIsNotRegistered team
-                    let! teamName = OnlyIf.teamNameNotEmpty teamName
+            let teamNameNotEmpty (TeamName name) =
+                match System.String.IsNullOrWhiteSpace name with
+                | true -> TeamNameEmpty |> Validation.error
+                | false -> name |> TeamName |> Validation.ok
 
-                    return Registered(teamNumber, teamName) |> List.singleton
-                }
-            | ChangeName teamName ->
-                validation {
-                    let! _ = OnlyIf.teamIsRegistered team
-                    let! teamName = OnlyIf.teamNameNotEmpty teamName
+        module private Command =
+            let decide command team =
+                match command with
+                | Register(teamNumber, teamName, notebook) ->
+                    validation {
+                        let! _ = OnlyIf.teamIsNotRegistered team
+                        let! teamName = OnlyIf.teamNameNotEmpty teamName
 
-                    return TeamNameChanged teamName |> List.singleton
-                }
-            | AddNote noteId ->
-                validation {
-                    let! data = OnlyIf.teamIsRegistered team
-                    let! noteId = OnlyIf.noteIdUnique data noteId
+                        return Registered(teamNumber, teamName, notebook) |> List.singleton
+                    }
+                | ChangeName teamName ->
+                    validation {
+                        let! _ = OnlyIf.teamIsRegistered team
+                        let! teamName = OnlyIf.teamNameNotEmpty teamName
 
-                    return NoteAdded noteId |> List.singleton
-                }
-            | RemoveNote noteId ->
-                validation {
-                    let! data = OnlyIf.teamIsRegistered team
-                    let! noteId = OnlyIf.noteExists data noteId
+                        return TeamNameChanged teamName |> List.singleton
+                    }
 
-                    return NoteRemoved noteId |> List.singleton
-                }
+        let definition =
+            create Team.Unregistered Event.evolve Command.decide
 
-    let definition =
-        AggregateDefinition.create Team.Unregistered Event.evolve Command.decide
+type Team with
+    static member Register teamNumber teamName notebook =
+        (Team.Register (teamNumber, teamName, notebook), Team.definition.Init) ||> Team.definition.Decide |> Validation.map _.ToReadOnlyList()
+        
+    static member Rename team newName =
+        (Team.ChangeName newName, team) ||> Team.definition.Decide |> Validation.map _.ToReadOnlyList()
+        
+    static member Evolve team (events: IReadOnlyList<Team.Event>) =
+        events
+        |> _.FromReadOnlyList()
+        |> foldEvents Team.definition team

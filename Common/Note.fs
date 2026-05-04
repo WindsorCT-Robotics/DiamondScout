@@ -69,7 +69,7 @@ module Functional =
                 { note with Content = newContent }
                 |> NoteState.Created
 
-        let decide command state =
+        let private decide command state =
             match command with
                 | Command.Create(userId, dateAdded, noteContent) ->
                     validation {
@@ -93,10 +93,10 @@ module Functional =
             
 type Note with
     static member Create userId dateAdded content =
-        (Note.Create (userId, dateAdded, content), NoteState.NotCreated) ||> Note.decide |> Validation.map _.ToReadOnlyList()
+        (Note.Create (userId, dateAdded, content), NoteState.NotCreated) ||> Note.definition.Decide |> Validation.map _.ToReadOnlyList()
         
     static member Edit content note =
-        (Note.Edit content, note) ||> Note.decide |> Validation.map _.ToReadOnlyList()
+        (Note.Edit content, note) ||> Note.definition.Decide |> Validation.map _.ToReadOnlyList()
         
     static member Evolve note (events: IReadOnlyList<Note.Event>) =
         events
