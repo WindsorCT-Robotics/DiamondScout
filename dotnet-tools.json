@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "glider": {
+      "version": "6.11.0",
+      "commands": [
+        "glider"
+      ],
+      "rollForward": false
+    }
+  }
+}

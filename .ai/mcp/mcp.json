@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "glider": {
+      "command": "glider",
+      "args": [
+        "--default-timeout",
+        "30m"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/cchristie/RiderProjects/DiamondScout/"
+      ]
+    },
+    "git": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-git",
+        "--repository",
+        "/home/cchristie/RiderProjects/DiamondScout/"
+      ]
+    },
+    "mslearn": {
+      "url": "https://learn.microsoft.com/api/mcp"
+    }
+  }
+}
