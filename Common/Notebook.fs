@@ -1,7 +1,9 @@
 namespace ParagonRobotics.DiamondScout.Common
 
 open System
+open System.Collections.Generic
 open FsToolkit.ErrorHandling
+open FSharp.Core
 
 [<Struct>]
 type NotebookName = NotebookName of string
@@ -108,4 +110,13 @@ module Functional =
             create initialState evolve decide
             
 type Notebook with
-    
+    static member Create name =
+        (Notebook.Create name, Notebook.definition.Init) ||> Notebook.definition.Decide |> Validation.map _.ToReadOnlyList()
+    static member AddNote noteId notebook =
+        (Notebook.AddNote noteId, notebook) ||> Notebook.definition.Decide |> Validation.map _.ToReadOnlyList()
+    static member RemoveNote noteId notebook =
+        (Notebook.RemoveNote noteId, notebook) ||> Notebook.definition.Decide |> Validation.map _.ToReadOnlyList()
+    static member Evolve notebook (events: IReadOnlyList<Notebook.Event>) =
+        events
+        |> _.FromReadOnlyList()
+        |> foldEvents Notebook.definition notebook

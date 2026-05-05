@@ -1,61 +1,67 @@
-namespace ParagonRobotics.DiamondScout.Common.Functional
+namespace ParagonRobotics.DiamondScout.Common
 
 open FsToolkit.ErrorHandling
 
-type TeamRegistry = private { Teams: Set<TeamNumber> }
+type TeamRegistry =
+    private
+    | Closed
+    | Open of teams: Set<TeamNumber>
 
-[<RequireQualifiedAccess>]
-module TeamRegistry =
-    type Command =
-        | RegisterTeam of TeamNumber
-        | UnregisterTeam of TeamNumber
 
-    type Error =
-        | TeamAlreadyRegistered of TeamNumber
-        | TeamNotRegistered of TeamNumber
-
-    type Event =
-        | TeamRegistered of TeamNumber
-        | TeamUnregistered of TeamNumber
-
-    module private Event =
-        let evolve registry event =
-            match event with
-            | TeamRegistered teamNumber ->
-                { registry with
-                    Teams = registry.Teams.Add teamNumber }
-            | TeamUnregistered teamNumber ->
-                { registry with
-                    Teams = registry.Teams.Remove teamNumber }
-
+[<AutoOpen>]
+module Functional =
     [<RequireQualifiedAccess>]
-    module private OnlyIf =
-        let teamIsRegistered registry teamNumber =
-            match registry.Teams.Contains teamNumber with
-            | true -> Validation.ok teamNumber
-            | false -> teamNumber |> TeamNotRegistered |> Validation.error
+    module TeamRegistry =
+        type Command =
+            | RegisterTeam of TeamNumber
+            | UnregisterTeam of TeamNumber
 
-        let teamIsNotRegistered registry teamNumber =
-            match registry.Teams.Contains teamNumber with
-            | true -> teamNumber |> TeamAlreadyRegistered |> Validation.error
-            | false -> Validation.ok teamNumber
+        type Error =
+            | TeamAlreadyRegistered of TeamNumber
+            | TeamNotRegistered of TeamNumber
 
-    module private Command =
-        let decide command registry =
-            match command with
-            | RegisterTeam teamNumber ->
-                validation {
-                    let! teamNumber = OnlyIf.teamIsNotRegistered registry teamNumber
+        type Event =
+            | TeamRegistered of TeamNumber
+            | TeamUnregistered of TeamNumber
 
-                    return TeamRegistered teamNumber |> List.singleton
-                }
-            | UnregisterTeam teamNumber ->
-                validation {
-                    let! teamNumber = OnlyIf.teamIsRegistered registry teamNumber
+        module private Event =
+            let evolve registry event =
+                match event with
+                | TeamRegistered teamNumber ->
+                    { registry with
+                        Teams = registry.Teams.Add teamNumber }
+                | TeamUnregistered teamNumber ->
+                    { registry with
+                        Teams = registry.Teams.Remove teamNumber }
 
-                    return TeamUnregistered teamNumber |> List.singleton
-                }
+        [<RequireQualifiedAccess>]
+        module private OnlyIf =
+            let teamIsRegistered registry teamNumber =
+                match registry.Teams.Contains teamNumber with
+                | true -> Validation.ok teamNumber
+                | false -> teamNumber |> TeamNotRegistered |> Validation.error
 
-    let initialState = { Teams = Set.empty }
+            let teamIsNotRegistered registry teamNumber =
+                match registry.Teams.Contains teamNumber with
+                | true -> teamNumber |> TeamAlreadyRegistered |> Validation.error
+                | false -> Validation.ok teamNumber
 
-    let definition = AggregateDefinition.create initialState Event.evolve Command.decide
+        module private Command =
+            let decide command registry =
+                match command with
+                | RegisterTeam teamNumber ->
+                    validation {
+                        let! teamNumber = OnlyIf.teamIsNotRegistered registry teamNumber
+
+                        return TeamRegistered teamNumber |> List.singleton
+                    }
+                | UnregisterTeam teamNumber ->
+                    validation {
+                        let! teamNumber = OnlyIf.teamIsRegistered registry teamNumber
+
+                        return TeamUnregistered teamNumber |> List.singleton
+                    }
+
+        let initialState = { Teams = Set.empty }
+
+        let definition = create initialState Event.evolve Command.decide
