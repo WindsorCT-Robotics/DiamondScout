@@ -1,4 +1,4 @@
-namespace ParagonRobotics.DiamondScout.Common.Functional
+namespace ParagonRobotics.DiamondScout.Common
 
 [<Struct>]
 type TierName = TierName of string
@@ -44,7 +44,7 @@ type ScoreValue =
     | Qualitative of QualitativeScoring
 
 /// A scoring value that can be evaluated given a ScoringTier.
-type Score = private Score of (ScoringTier -> Points)
+type internal Score = private Score of (ScoringTier -> Points)
 
 [<RequireQualifiedAccess>]
 module internal Score =

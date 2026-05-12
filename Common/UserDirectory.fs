@@ -106,13 +106,20 @@ module Functional =
         let definition = create initialState Event.evolve Command.decide
 
 type UserDirectory with
-    static member Register (userId: UserId, name: UserName) =
-        (UserDirectory.Command.Register(userId, name), UserDirectory.definition.Init) ||> UserDirectory.definition.Decide |> Validation.map _.ToReadOnlyList()
-    static member ChangeName (users: UserDirectory, userId: UserId, name: UserName) =
-        (UserDirectory.Command.ChangeName(userId, name), users) ||> UserDirectory.definition.Decide |> Validation.map _.ToReadOnlyList()
-    static member Deactivate (users: UserDirectory, userId: UserId) =
-        (UserDirectory.Command.Deactivate(userId), users) ||> UserDirectory.definition.Decide |> Validation.map _.ToReadOnlyList()
-    static member Evolve (users: UserDirectory, events: UserDirectory.Event IReadOnlyList) =
-        events
-        |> _.FromReadOnlyList()
-        |> foldEvents UserDirectory.definition users
+    static member Register(userId: UserId, name: UserName) =
+        (UserDirectory.Command.Register(userId, name), UserDirectory.definition.Init)
+        ||> UserDirectory.definition.Decide
+        |> Validation.map _.ToReadOnlyList()
+
+    static member ChangeName(users: UserDirectory, userId: UserId, name: UserName) =
+        (UserDirectory.Command.ChangeName(userId, name), users)
+        ||> UserDirectory.definition.Decide
+        |> Validation.map _.ToReadOnlyList()
+
+    static member Deactivate(users: UserDirectory, userId: UserId) =
+        (UserDirectory.Command.Deactivate(userId), users)
+        ||> UserDirectory.definition.Decide
+        |> Validation.map _.ToReadOnlyList()
+
+    static member Evolve(users: UserDirectory, events: UserDirectory.Event IReadOnlyList) =
+        events |> _.FromReadOnlyList() |> foldEvents UserDirectory.definition users

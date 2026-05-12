@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <Compile Include="Extensions.fs" />
-    <Compile Include="Identifiers.fs" />
     <Compile Include="AggregateDefinition.fs" />
     <Compile Include="Projection.fs" />
     <Compile Include="User.fs" />
@@ -22,9 +21,10 @@
     <Compile Include="Notebook.fs" />
     <Compile Include="Teams.fs" />
     <Compile Include="TeamRegistry.fs" />
-    <Compile Include="Scoring.fs" />
     <Compile Include="Period.fs" />
+    <Compile Include="Scoring.fs" />
     <Compile Include="GamePieces.fs" />
+    <Compile Include="GamePieceScoringRule.fs" />
     <Compile Include="Infractions.fs" />
     <Compile Include="ParameterDefinition.fs" />
     <Compile Include="ParameterValue.fs" />

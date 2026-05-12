@@ -1,7 +1,16 @@
-namespace ParagonRobotics.DiamondScout.Common.Functional
+namespace ParagonRobotics.DiamondScout.Common
 
 open System
 open FsToolkit.ErrorHandling
+
+[<Struct>]
+type InfractionId =
+    private
+    | InfractionId of Guid
+
+    static member Zero = InfractionId Guid.Empty
+    static member Create() = Guid.CreateVersion7() |> InfractionId
+    member this.Value = let (InfractionId guid) = this in guid
 
 [<Struct>]
 type InfractionName = InfractionName of string

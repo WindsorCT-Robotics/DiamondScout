@@ -1,8 +1,16 @@
-﻿namespace ParagonRobotics.DiamondScout.Common.Functional
+﻿namespace ParagonRobotics.DiamondScout.Common
 
 open System
 open FsToolkit.ErrorHandling
-open ParagonRobotics.DiamondScout.Common
+
+[<Struct>]
+type RobotId =
+    private
+    | RobotId of Guid
+
+    static member Zero = RobotId Guid.Empty
+    static member Create() = Guid.CreateVersion7() |> RobotId
+    member this.Value = let (RobotId guid) = this in guid
 
 [<Struct>]
 type RobotName =
@@ -75,12 +83,12 @@ module Robot =
             match String.IsNullOrWhiteSpace name with
             | true -> RobotNameEmpty |> Validation.error
             | false -> robotName |> Validation.ok
-            
+
         let noteIdUnique robot noteId =
             match List.contains noteId robot.Notes with
             | true -> noteId |> DuplicateNote |> Validation.error
             | false -> noteId |> Validation.ok
-            
+
         let noteExists robot noteId =
             match List.contains noteId robot.Notes with
             | true -> noteId |> Validation.ok
@@ -111,7 +119,7 @@ module Robot =
     let addNote noteId robot =
         validation {
             let! noteId = OnlyIf.noteIdUnique robot noteId
-            
+
             return
                 { robot with
                     Robot.Notes = noteId :: robot.Notes }
@@ -120,7 +128,7 @@ module Robot =
     let removeNote noteId robot =
         validation {
             let! noteId = OnlyIf.noteExists robot noteId
-            
+
             return
                 { robot with
                     Robot.Notes = robot.Notes |> List.filter (fun id -> id <> noteId) }

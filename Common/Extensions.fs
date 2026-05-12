@@ -14,9 +14,10 @@ type ResultExtensions() =
 
 type ListExtensions() =
     [<Extension>]
-    static member inline ToReadOnlyList<'T> (fSharpList: 'T list) = fSharpList :> IReadOnlyList<'T>
+    static member inline ToReadOnlyList<'T>(fSharpList: 'T list) = fSharpList :> IReadOnlyList<'T>
+
     [<Extension>]
-    static member inline FromReadOnlyList<'T> (readOnlyList: 'T IReadOnlyList) =
+    static member inline FromReadOnlyList<'T>(readOnlyList: 'T IReadOnlyList) =
         match readOnlyList with
         | :? list<'T> as list -> list
         | readOnlyList -> readOnlyList |> Seq.toList

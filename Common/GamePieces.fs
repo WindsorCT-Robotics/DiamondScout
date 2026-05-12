@@ -1,14 +1,22 @@
-namespace ParagonRobotics.DiamondScout.Common.Functional
+namespace ParagonRobotics.DiamondScout.Common
 
+open System
 open FsToolkit.ErrorHandling
+
+[<Struct>]
+type GamePieceId =
+    private
+    | GamePieceId of Guid
+
+    static member Zero = GamePieceId Guid.Empty
+    static member Create() = Guid.CreateVersion7() |> GamePieceId
+    member this.Value = let (GamePieceId guid) = this in guid
 
 [<Struct>]
 type GamePieceName = GamePieceName of string
 
-type GamePiece =
-    private
-        { Name: GamePieceName
-          ScoreValues: Map<TimeframeId, ScoreValue> }
+type GamePiece = private { Name: GamePieceName }
+
 
 [<RequireQualifiedAccess>]
 module GamePiece =
@@ -16,17 +24,15 @@ module GamePiece =
 
     module private OnlyIf =
         let nameNotEmpty (GamePieceName name as gamePieceName) =
-            match System.String.IsNullOrWhiteSpace name with
+            match String.IsNullOrWhiteSpace name with
             | true -> GamePieceNameEmpty |> Validation.error
             | false -> gamePieceName |> Validation.ok
 
-    let create name values =
+    let create name =
         validation {
             let! name = OnlyIf.nameNotEmpty name
 
-            return
-                { Name = name
-                  ScoreValues = values }
+            return { Name = name }
         }
 
     let withName name piece =
@@ -34,7 +40,3 @@ module GamePiece =
             let! name = OnlyIf.nameNotEmpty name
             return { piece with GamePiece.Name = name }
         }
-
-    let changeValue value piece =
-        { piece with
-            GamePiece.ScoreValues = value }

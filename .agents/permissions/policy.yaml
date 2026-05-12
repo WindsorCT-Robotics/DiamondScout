@@ -1,0 +1,6 @@
+deny:
+  write:
+    - ".env"
+    - ".env.*"
+    - "*.pem"
+    - "*.key"

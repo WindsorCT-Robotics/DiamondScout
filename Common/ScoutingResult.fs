@@ -1,8 +1,19 @@
-namespace ParagonRobotics.DiamondScout.Common.Functional
+namespace ParagonRobotics.DiamondScout.Common
 
 open System
 open FsToolkit.ErrorHandling
-open ParagonRobotics.DiamondScout.Common
+
+[<Struct>]
+type ScoutingResultId =
+    private
+    | ScoutingResultId of Guid
+
+    static member Zero = ScoutingResultId Guid.Empty
+
+    static member Create() =
+        Guid.CreateVersion7() |> ScoutingResultId
+
+    member this.Value = let (ScoutingResultId guid) = this in guid
 
 [<Struct>]
 type MatchNumber = MatchNumber of uint
@@ -14,25 +25,25 @@ type TournamentLevel =
     | Practice
     | Qualification
     | Playoff
-    
+
 [<Struct>]
 type DistrictCode = DistrictCode of string
 
 [<Struct>]
 type DistrictName = DistrictName of string
 
-type District = { Code: DistrictCode; Name: DistrictName }
+type District =
+    { Code: DistrictCode
+      Name: DistrictName }
 
 [<Struct>]
 type EventCode = EventCode of string
 
 [<Struct>]
 type EventName = EventName of string
-    
-type FrcEvent =
-    { Code: EventCode
-      Name: EventName }
-    
+
+type FrcEvent = { Code: EventCode; Name: EventName }
+
 type EventMatchDetails =
     { District: District
       Event: FrcEvent
@@ -93,7 +104,7 @@ type Breakdown =
 type ScoreRecord =
     { GamePiece: GamePiece
       Tier: ScoringTier
-      Phase: SubPhaseId }
+      Phase: TimeframeId }
 
     static member create gamePiece tier phase =
         { GamePiece = gamePiece
@@ -131,7 +142,7 @@ module ScoutingResult =
         | InvalidInfractionId of infractionId: InfractionId
         | InvalidParameterId of parameterId: ParameterDefinitionId
         | InvalidNoteId of noteId: NoteId
-        | InvalidSubPhaseId of subPhaseId: SubPhaseId
+        | InvalidTimeframeId of timeframeId: TimeframeId
 
     [<RequireQualifiedAccess>]
     module private OnlyIf =
@@ -193,10 +204,10 @@ module ScoutingResult =
             | true -> noteId |> InvalidNoteId |> Validation.error
             | false -> noteId |> Validation.ok
 
-        let subPhaseIdValid subPhaseId =
-            match subPhaseId = SubPhaseId.Zero with
-            | true -> subPhaseId |> InvalidSubPhaseId |> Validation.error
-            | false -> subPhaseId |> Validation.ok
+        let timeframeIdValid timeframeId =
+            match timeframeId = TimeframeId.Zero with
+            | true -> timeframeId |> Error.InvalidTimeframeId |> Validation.error
+            | false -> timeframeId |> Validation.ok
 
         let scoutingIsFinalized scoutingResult =
             match scoutingResult with
@@ -213,28 +224,36 @@ module ScoutingResult =
                   Alliance = alliance
                   MatchDetails = matchDetails
                   Scores = []
-                  Endgame = { Capable = endgameCapability; Result = EndgameResult.NotAttempted }
+                  Endgame =
+                    { Capable = endgameCapability
+                      Result = EndgameResult.NotAttempted }
                   Breakdowns = []
                   ScoutingParameters = Map.empty
                   Infractions = List.empty
                   Notes = [] }
                 |> ScoutingResult.Scouting
         }
-    
+
     let changeMatchDetails matchDetails scoutingResult =
         validation {
             match scoutingResult with
             | ScoutingResult.Scouting scoutingData ->
-                return { scoutingData with MatchDetails = matchDetails } |> ScoutingResult.Scouting
+                return
+                    { scoutingData with
+                        MatchDetails = matchDetails }
+                    |> ScoutingResult.Scouting
             | ScoutingResult.Finalized scoutingData ->
-                return { scoutingData with MatchDetails = matchDetails } |> ScoutingResult.Finalized
+                return
+                    { scoutingData with
+                        MatchDetails = matchDetails }
+                    |> ScoutingResult.Finalized
             | ScoutingResult.NotStarted -> return! Error.ScoutingNotStarted |> Validation.error
         }
 
     let recordScore phase gamePiece tier scoutingResult =
         validation {
             let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
-            let! phase = OnlyIf.subPhaseIdValid phase
+            let! phase = OnlyIf.timeframeIdValid phase
 
             return
                 { scoutingData with
@@ -335,13 +354,13 @@ module ScoutingResult =
     let finalize scoutingData =
         validation {
             let! scoutingData = OnlyIf.scoutingIsInProgress scoutingData
-            
+
             return ScoutingResult.Finalized scoutingData
         }
-    
+
     let reopen scoutingData =
         validation {
             let! scoutingData = OnlyIf.scoutingIsFinalized scoutingData
-            
+
             return ScoutingResult.Scouting scoutingData
         }

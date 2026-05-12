@@ -1,0 +1,14 @@
+version: "1.0"
+
+project:
+  name: "diamondscout"
+  description: "Paragon Robotics Scouting Application for FIRST Robotics Competition"
+  language: F#, C#
+  framework: ASP.NET, Blazor, Fable.Remoting
+
+layers:
+  context: true
+  skills: true
+  commands: true
+  agents: true
+  permissions: true

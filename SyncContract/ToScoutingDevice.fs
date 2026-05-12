@@ -20,7 +20,7 @@ type ScoutingDataModel =
     { GameName: string
       Users: IReadOnlyDictionary<UserId, UserData>
       Parameters: RobotParameters IReadOnlyCollection
-      Phases: IReadOnlyDictionary<SubPhaseId, SubPhase>
+      Phases: IReadOnlyDictionary<TimeframeId, SubPhase>
       GamePieces: IReadOnlyDictionary<GamePieceId, GamePiece>
       Infractions: IReadOnlyDictionary<InfractionId, Infraction>
       Event: struct (FrcEventId * string) }

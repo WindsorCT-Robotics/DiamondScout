@@ -1,9 +1,17 @@
 ﻿namespace ParagonRobotics.DiamondScout.Common
 
+open System
 open System.Collections.Generic
 open FsToolkit.ErrorHandling
-open ParagonRobotics.DiamondScout.Common
-open ParagonRobotics.DiamondScout.Common.Functional.AggregateDefinition
+
+[<Struct>]
+type TeamId =
+    private
+    | TeamId of Guid
+
+    static member Zero = TeamId Guid.Empty
+    static member Create() = Guid.CreateVersion7() |> TeamId
+    member this.Value = let (TeamId guid) = this in guid
 
 /// A FIRST Robotics Competition team number.
 [<Struct>]
@@ -19,22 +27,14 @@ type TeamName =
     /// <param name="teamName">The team name.</param>
     | TeamName of teamName: string
 
-/// A FIRST Robotics Competition team.
-type TeamData =
-    {
-        /// The team's number.
-        TeamNumber: TeamNumber
-        /// The team's name.
-        TeamName: TeamName
-        /// Notes about the team.
-        Notes: NotebookId
-    }
-
 [<RequireQualifiedAccess>]
 type Team =
     private
     | Unregistered
-    | Registered of TeamData
+    | Registered of
+        {| TeamNumber: TeamNumber
+           TeamName: TeamName
+           Notes: NotebookId |}
 
 [<AutoOpen>]
 module Functional =
@@ -59,16 +59,16 @@ module Functional =
                 | Registered(teamNumber, teamName, notebook) ->
                     match team with
                     | Team.Unregistered ->
-                        { TeamNumber = teamNumber
-                          TeamName = teamName
-                          Notes = notebook }
+                        {| TeamNumber = teamNumber
+                           TeamName = teamName
+                           Notes = notebook |}
                         |> Team.Registered
                     | Team.Registered _ as team -> team
                 | TeamNameChanged teamName ->
                     match team with
-                    | Team.Registered data -> { data with TeamName = teamName } |> Team.Registered
+                    | Team.Registered data -> {| data with TeamName = teamName |} |> Team.Registered
                     | Team.Unregistered as team -> team
-                
+
         [<RequireQualifiedAccess>]
         module private OnlyIf =
             let teamIsRegistered team =
@@ -104,17 +104,18 @@ module Functional =
                         return TeamNameChanged teamName |> List.singleton
                     }
 
-        let definition =
-            create Team.Unregistered Event.evolve Command.decide
+        let definition = create Team.Unregistered Event.evolve Command.decide
 
 type Team with
     static member Register teamNumber teamName notebook =
-        (Team.Register (teamNumber, teamName, notebook), Team.definition.Init) ||> Team.definition.Decide |> Validation.map _.ToReadOnlyList()
-        
+        (Team.Register(teamNumber, teamName, notebook), Team.definition.Init)
+        ||> Team.definition.Decide
+        |> Validation.map _.ToReadOnlyList()
+
     static member Rename team newName =
-        (Team.ChangeName newName, team) ||> Team.definition.Decide |> Validation.map _.ToReadOnlyList()
-        
+        (Team.ChangeName newName, team)
+        ||> Team.definition.Decide
+        |> Validation.map _.ToReadOnlyList()
+
     static member Evolve team (events: IReadOnlyList<Team.Event>) =
-        events
-        |> _.FromReadOnlyList()
-        |> foldEvents Team.definition team
+        events |> _.FromReadOnlyList() |> foldEvents Team.definition team

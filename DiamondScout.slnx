@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/AI/">
+    <File Path="AGENTS.md" />
+    <File Path="README.md" />
+  </Folder>
   <Folder Name="/Backend/">
     <Project Path="Application/Application.fsproj" />
   </Folder>

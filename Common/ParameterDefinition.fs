@@ -1,6 +1,18 @@
-namespace ParagonRobotics.DiamondScout.Common.Functional
+namespace ParagonRobotics.DiamondScout.Common
 
 open System
+
+[<Struct>]
+type ParameterDefinitionId =
+    private
+    | ParameterDefinitionId of Guid
+
+    static member Zero = ParameterDefinitionId Guid.Empty
+
+    static member Create() =
+        Guid.CreateVersion7() |> ParameterDefinitionId
+
+    member this.Value = let (ParameterDefinitionId guid) = this in guid
 
 [<Struct>]
 type ParameterDefinitionName = ParameterDefinitionName of string

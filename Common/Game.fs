@@ -8,16 +8,17 @@ open ParagonRobotics.DiamondScout.Common
 [<Struct>]
 type GameName = GameName of string
 
-type Game = private {
-      Year: DateOnly
-      Name: GameName
-      Periods: Periods
-      GamePieces: Map<GamePieceId, GamePiece>
-      Infractions: Map<InfractionId, Infraction>
-      PitResults: Map<RobotId, Robot>
-      ScoutingResults: Map<ScoutingResultId, ScoutingResult>
-      ParameterDefinitions: Map<ParameterDefinitionId, ParameterDefinition>
-      Notes: Map<NoteId, Note> }
+type Game =
+    private
+        { Year: DateOnly
+          Name: GameName
+          Periods: Periods
+          GamePieces: Map<GamePieceId, GamePiece>
+          Infractions: Map<InfractionId, Infraction>
+          PitResults: Map<RobotId, Robot>
+          ScoutingResults: Map<ScoutingResultId, ScoutingResult>
+          ParameterDefinitions: Map<ParameterDefinitionId, ParameterDefinition>
+          Notes: Map<NoteId, Note> }
 
 [<RequireQualifiedAccess>]
 type GameState =
@@ -37,11 +38,11 @@ module Game =
             | InvalidParameterValue of ParameterDefinitionId * ParameterValue
             | MissingParameterDefinitions of ParameterDefinitionId list
             | ExtraParameterDefinitions of ParameterDefinitionId list
-            
+
         type RobotError =
             | RobotAlreadyExists of RobotId
             | RobotDoesNotExist of RobotId
-            | 
+
         [<RequireQualifiedAccess>]
         type GameError =
             | GameAlreadyStarted
@@ -128,7 +129,13 @@ module Game =
         | ChangeInfractionSeverity of id: InfractionId * severity: Foul voption
         | ChangeInfractionCard of id: InfractionId * card: Card voption
         // PitResult
-        | ScoutPit of id: RobotId * teamId: TeamId * name: RobotName * endgame: EndgameCapable * drivetrain: Drivetrain * parameters: Map<ParameterDefinitionId, ParameterValue>
+        | ScoutPit of
+            id: RobotId *
+            teamId: TeamId *
+            name: RobotName *
+            endgame: EndgameCapable *
+            drivetrain: Drivetrain *
+            parameters: Map<ParameterDefinitionId, ParameterValue>
         | ChangeRobotName of id: RobotId * name: RobotName
         | ChangeTeamId of id: RobotId * teamId: TeamId
         | ChangeEndgameCapabilities of id: RobotId * endgame: EndgameCapable
@@ -142,14 +149,21 @@ module Game =
         | ChangeScoutingNoteText of scoutingResultId: ScoutingResultId * noteId: NoteId * text: NoteContent
         | RemoveScoutingNote of scoutingResultId: ScoutingResultId * noteId: NoteId
         // ParameterDefinition
-        | DefineParameter of id: ParameterDefinitionId * name: ParameterDefinitionName * spec: ParameterSpec * category: ParameterCategory
+        | DefineParameter of
+            id: ParameterDefinitionId *
+            name: ParameterDefinitionName *
+            spec: ParameterSpec *
+            category: ParameterCategory
         | ChangeParameterName of id: ParameterDefinitionId * name: ParameterDefinitionName
         | ChangeParameterSpec of id: ParameterDefinitionId * spec: ParameterSpec
         | ChangeParameterCategory of id: ParameterDefinitionId * category: ParameterCategory
         // Parameter values
         | SetPitParameterValue of robotId: RobotId * definitionId: ParameterDefinitionId * value: ParameterValue
         | UnsetPitParameterValue of robotId: RobotId * definitionId: ParameterDefinitionId
-        | SetMatchParameterValue of scoutingResultId: ScoutingResultId * definitionId: ParameterDefinitionId * value: ParameterValue
+        | SetMatchParameterValue of
+            scoutingResultId: ScoutingResultId *
+            definitionId: ParameterDefinitionId *
+            value: ParameterValue
         | UnsetMatchParameterValue of scoutingResultId: ScoutingResultId * definitionId: ParameterDefinitionId
 
     [<RequireQualifiedAccess>]
@@ -202,8 +216,7 @@ module Game =
                   Severity: Foul voption }
 
             type CardChanged =
-                { Id: InfractionId
-                  Card: Card voption }
+                { Id: InfractionId; Card: Card voption }
 
         [<RequireQualifiedAccess>]
         module PitResult =
@@ -255,8 +268,7 @@ module Game =
                   Text: NoteContent }
 
             type NoteRemoved =
-                { Id: ScoutingResultId
-                  NoteId: NoteId }
+                { Id: ScoutingResultId; NoteId: NoteId }
 
         [<RequireQualifiedAccess>]
         module ParameterDefinition =
@@ -385,11 +397,7 @@ module Game =
                     game
             | _ -> game
 
-        let private unsetPitParameter
-            (robotId: RobotId)
-            (definitionId: ParameterDefinitionId)
-            game
-            =
+        let private unsetPitParameter (robotId: RobotId) (definitionId: ParameterDefinitionId) game =
             match game.PitResults.TryFind robotId with
             | Some robot ->
                 match Robot.removePitScoutingParameter definitionId robot with
@@ -445,8 +453,7 @@ module Game =
                   Notes = Map.empty }
                 |> GameState.GameStarted
             | GameState.GameNotStarted, _ -> state
-            | GameState.GameStarted game, GameEvent.Started _ ->
-                GameState.GameStarted game
+            | GameState.GameStarted game, GameEvent.Started _ -> GameState.GameStarted game
             | GameState.GameStarted game, GameEvent.NameChanged args ->
                 { game with Name = args.Name } |> GameState.GameStarted
             | GameState.GameStarted game, GameEvent.YearChanged args ->
@@ -455,7 +462,14 @@ module Game =
                 let updatedGame =
                     match timeframeEvent with
                     | Timeframe.Defined args ->
-                        match Timeframe.addOrUpdateTimeframe args.Period args.TimeframeId args.Name args.Duration game.Periods with
+                        match
+                            Timeframe.addOrUpdateTimeframe
+                                args.Period
+                                args.TimeframeId
+                                args.Name
+                                args.Duration
+                                game.Periods
+                        with
                         | Ok periods -> { game with Periods = periods }
                         | Error _ -> game
                     | Timeframe.Removed args ->
@@ -477,10 +491,12 @@ module Game =
                         { game with
                             GamePieces =
                                 game.GamePieces
-                                |> Map.change args.GamePieceId (Option.map (fun piece ->
-                                    match GamePiece.withName args.GamePieceName piece with
-                                    | Ok updatedPiece -> updatedPiece
-                                    | Error _ -> piece)) }
+                                |> Map.change
+                                    args.GamePieceId
+                                    (Option.map (fun piece ->
+                                        match GamePiece.withName args.GamePieceName piece with
+                                        | Ok updatedPiece -> updatedPiece
+                                        | Error _ -> piece)) }
                     | GamePiece.ScoreValuesChanged args ->
                         { game with
                             GamePieces =
@@ -501,20 +517,26 @@ module Game =
                         { game with
                             Infractions =
                                 game.Infractions
-                                |> Map.change args.Id (Option.map (fun infraction ->
-                                    match Infraction.changeName infraction args.Name with
-                                    | Ok updatedInfraction -> updatedInfraction
-                                    | Error _ -> infraction)) }
+                                |> Map.change
+                                    args.Id
+                                    (Option.map (fun infraction ->
+                                        match Infraction.changeName infraction args.Name with
+                                        | Ok updatedInfraction -> updatedInfraction
+                                        | Error _ -> infraction)) }
                     | Infraction.SeverityChanged args ->
                         { game with
                             Infractions =
                                 game.Infractions
-                                |> Map.change args.Id (Option.map (fun infraction -> Infraction.changeSeverity infraction args.Severity)) }
+                                |> Map.change
+                                    args.Id
+                                    (Option.map (fun infraction -> Infraction.changeSeverity infraction args.Severity)) }
                     | Infraction.CardChanged args ->
                         { game with
                             Infractions =
                                 game.Infractions
-                                |> Map.change args.Id (Option.map (fun infraction -> Infraction.changeCard infraction args.Card)) }
+                                |> Map.change
+                                    args.Id
+                                    (Option.map (fun infraction -> Infraction.changeCard infraction args.Card)) }
 
                 updatedGame |> GameState.GameStarted
             | GameState.GameStarted game, GameEvent.PitResultEvent pitResultEvent ->
@@ -547,12 +569,16 @@ module Game =
                         { game with
                             PitResults =
                                 game.PitResults
-                                |> Map.change args.Id (Option.map (fun robot -> Robot.withEndgameCapabilities args.EndgameCapable robot)) }
+                                |> Map.change
+                                    args.Id
+                                    (Option.map (fun robot -> Robot.withEndgameCapabilities args.EndgameCapable robot)) }
                     | PitResult.DrivetrainChanged args ->
                         { game with
                             PitResults =
                                 game.PitResults
-                                |> Map.change args.Id (Option.map (fun robot -> Robot.withDrivetrain args.Drivetrain robot)) }
+                                |> Map.change
+                                    args.Id
+                                    (Option.map (fun robot -> Robot.withDrivetrain args.Drivetrain robot)) }
                     | PitResult.NoteAdded args ->
                         match game.PitResults.TryFind args.Id, Note.create args.UserId args.Text with
                         | Some robot, Ok note ->
@@ -567,10 +593,12 @@ module Game =
                         { game with
                             Notes =
                                 game.Notes
-                                |> Map.change args.NoteId (Option.map (fun note ->
-                                    match Note.edit args.Text note with
-                                    | Ok updatedNote -> updatedNote
-                                    | Error _ -> note)) }
+                                |> Map.change
+                                    args.NoteId
+                                    (Option.map (fun note ->
+                                        match Note.edit args.Text note with
+                                        | Ok updatedNote -> updatedNote
+                                        | Error _ -> note)) }
                     | PitResult.NoteRemoved args ->
                         match game.PitResults.TryFind args.Id with
                         | Some robot ->
@@ -603,10 +631,12 @@ module Game =
                         { game with
                             Notes =
                                 game.Notes
-                                |> Map.change args.NoteId (Option.map (fun note ->
-                                    match Note.edit args.Text note with
-                                    | Ok updatedNote -> updatedNote
-                                    | Error _ -> note)) }
+                                |> Map.change
+                                    args.NoteId
+                                    (Option.map (fun note ->
+                                        match Note.edit args.Text note with
+                                        | Ok updatedNote -> updatedNote
+                                        | Error _ -> note)) }
                     | ScoutingResult.NoteRemoved args ->
                         match game.ScoutingResults.TryFind args.Id with
                         | Some scoutingResult ->
@@ -651,8 +681,7 @@ module Game =
                     | Parameter.PitValueUnset args -> unsetPitParameter args.RobotId args.DefinitionId game
                     | Parameter.MatchValueSet args ->
                         setMatchParameter args.ScoutingResultId args.DefinitionId args.Value game
-                    | Parameter.MatchValueUnset args ->
-                        unsetMatchParameter args.ScoutingResultId args.DefinitionId game
+                    | Parameter.MatchValueUnset args -> unsetMatchParameter args.ScoutingResultId args.DefinitionId game
 
                 updatedGame |> GameState.GameStarted
 
@@ -671,6 +700,7 @@ module Game =
         let timeframeExists (game: Game) (period: Period) (id: TimeframeId) =
             let periodData = Timeframe.getPeriodData period game.Periods
             let (PeriodData timeframeMap) = periodData
+
             match timeframeMap.ContainsKey id with
             | true -> id |> Validation.ok
             | false -> GameError.TimeframeNotFound id |> Validation.error
@@ -705,12 +735,23 @@ module Game =
             | Some note -> note |> Validation.ok
             | None -> GameError.NoteNotFound id |> Validation.error
 
-        let mapRobotError result = result |> Result.mapError (List.map GameError.RobotError)
-        let mapScoutingResultError result = result |> Result.mapError (List.map GameError.ScoutingResultError)
-        let mapNoteError result = result |> Result.mapError (List.map GameError.NoteError)
-        let mapTimeframeError result = result |> Result.mapError (List.map GameError.TimeframeError)
-        let mapGamePieceError result = result |> Result.mapError (List.map GameError.GamePieceError)
-        let mapInfractionError result = result |> Result.mapError (List.map GameError.InfractionError)
+        let mapRobotError result =
+            result |> Result.mapError (List.map GameError.RobotError)
+
+        let mapScoutingResultError result =
+            result |> Result.mapError (List.map GameError.ScoutingResultError)
+
+        let mapNoteError result =
+            result |> Result.mapError (List.map GameError.NoteError)
+
+        let mapTimeframeError result =
+            result |> Result.mapError (List.map GameError.TimeframeError)
+
+        let mapGamePieceError result =
+            result |> Result.mapError (List.map GameError.GamePieceError)
+
+        let mapInfractionError result =
+            result |> Result.mapError (List.map GameError.InfractionError)
 
     [<RequireQualifiedAccess>]
     module Command =
@@ -734,39 +775,79 @@ module Game =
             | Command.DefineTimeframe(period, id, name, duration) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
-                    let! _ = Timeframe.addOrUpdateTimeframe period id name duration game.Periods |> OnlyIf.mapTimeframeError
-                    return [ Event.GameEvent.TimeframeEvent(Event.Timeframe.Defined { Period = period; TimeframeId = id; Name = name; Duration = duration }) ]
+
+                    let! _ =
+                        Timeframe.addOrUpdateTimeframe period id name duration game.Periods
+                        |> OnlyIf.mapTimeframeError
+
+                    return
+                        [ Event.GameEvent.TimeframeEvent(
+                              Event.Timeframe.Defined
+                                  { Period = period
+                                    TimeframeId = id
+                                    Name = name
+                                    Duration = duration }
+                          ) ]
                 }
             | Command.RemoveTimeframe(period, id) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! _ = Timeframe.removeTimeframe period id game.Periods |> OnlyIf.mapTimeframeError
-                    return [ Event.GameEvent.TimeframeEvent(Event.Timeframe.Removed { Period = period; TimeframeId = id }) ]
+
+                    return
+                        [ Event.GameEvent.TimeframeEvent(Event.Timeframe.Removed { Period = period; TimeframeId = id }) ]
                 }
             | Command.DefineGamePiece(id, name, values) ->
                 validation {
                     let! _ = OnlyIf.gameStarted state
                     and! _ = GamePiece.create name values |> OnlyIf.mapGamePieceError
-                    return [ Event.GameEvent.GamePieceEvent(Event.GamePiece.Defined { GamePieceId = id; GamePieceName = name; ScoreValues = values }) ]
+
+                    return
+                        [ Event.GameEvent.GamePieceEvent(
+                              Event.GamePiece.Defined
+                                  { GamePieceId = id
+                                    GamePieceName = name
+                                    ScoreValues = values }
+                          ) ]
                 }
             | Command.ChangeGamePieceName(id, name) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! piece = OnlyIf.gamePieceExists game id
                     let! _ = GamePiece.withName name piece |> OnlyIf.mapGamePieceError
-                    return [ Event.GameEvent.GamePieceEvent(Event.GamePiece.NameChanged { GamePieceId = id; GamePieceName = name }) ]
+
+                    return
+                        [ Event.GameEvent.GamePieceEvent(
+                              Event.GamePiece.NameChanged
+                                  { GamePieceId = id
+                                    GamePieceName = name }
+                          ) ]
                 }
             | Command.ChangeGamePieceScoreValues(id, values) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! _ = OnlyIf.gamePieceExists game id
-                    return [ Event.GameEvent.GamePieceEvent(Event.GamePiece.ScoreValuesChanged { GamePieceId = id; ScoreValues = values }) ]
+
+                    return
+                        [ Event.GameEvent.GamePieceEvent(
+                              Event.GamePiece.ScoreValuesChanged
+                                  { GamePieceId = id
+                                    ScoreValues = values }
+                          ) ]
                 }
             | Command.DefineInfraction(id, name, severity, card) ->
                 validation {
                     let! _ = OnlyIf.gameStarted state
                     and! _ = Infraction.create card severity name |> OnlyIf.mapInfractionError
-                    return [ Event.GameEvent.InfractionEvent(Event.Infraction.Defined { Id = id; Name = name; Severity = severity; Card = card }) ]
+
+                    return
+                        [ Event.GameEvent.InfractionEvent(
+                              Event.Infraction.Defined
+                                  { Id = id
+                                    Name = name
+                                    Severity = severity
+                                    Card = card }
+                          ) ]
                 }
             | Command.ChangeInfractionName(id, name) ->
                 validation {
@@ -779,7 +860,11 @@ module Game =
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! _ = OnlyIf.infractionExists game id
-                    return [ Event.GameEvent.InfractionEvent(Event.Infraction.SeverityChanged { Id = id; Severity = severity }) ]
+
+                    return
+                        [ Event.GameEvent.InfractionEvent(
+                              Event.Infraction.SeverityChanged { Id = id; Severity = severity }
+                          ) ]
                 }
             | Command.ChangeInfractionCard(id, card) ->
                 validation {
@@ -790,9 +875,23 @@ module Game =
             | Command.ScoutPit(id, teamId, name, endgame, drivetrain, parameters) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
-                    let! _ = Robot.createWithParameters name teamId endgame parameters drivetrain |> OnlyIf.mapRobotError
+
+                    let! _ =
+                        Robot.createWithParameters name teamId endgame parameters drivetrain
+                        |> OnlyIf.mapRobotError
+
                     and! _ = GameValidation.parametersMatch game.ParameterDefinitions ParameterCategory.Pit parameters
-                    return [ Event.GameEvent.PitResultEvent(Event.PitResult.Scouted { Id = id; TeamId = teamId; Name = name; EndgameCapable = endgame; Drivetrain = drivetrain; PitScoutingParameters = parameters }) ]
+
+                    return
+                        [ Event.GameEvent.PitResultEvent(
+                              Event.PitResult.Scouted
+                                  { Id = id
+                                    TeamId = teamId
+                                    Name = name
+                                    EndgameCapable = endgame
+                                    Drivetrain = drivetrain
+                                    PitScoutingParameters = parameters }
+                          ) ]
                 }
             | Command.ChangeRobotName(id, name) ->
                 validation {
@@ -810,13 +909,21 @@ module Game =
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! _ = OnlyIf.robotExists game id
-                    return [ Event.GameEvent.PitResultEvent(Event.PitResult.EndgameCapabilitiesChanged { Id = id; EndgameCapable = endgame }) ]
+
+                    return
+                        [ Event.GameEvent.PitResultEvent(
+                              Event.PitResult.EndgameCapabilitiesChanged { Id = id; EndgameCapable = endgame }
+                          ) ]
                 }
             | Command.ChangeDrivetrain(id, drivetrain) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! _ = OnlyIf.robotExists game id
-                    return [ Event.GameEvent.PitResultEvent(Event.PitResult.DrivetrainChanged { Id = id; Drivetrain = drivetrain }) ]
+
+                    return
+                        [ Event.GameEvent.PitResultEvent(
+                              Event.PitResult.DrivetrainChanged { Id = id; Drivetrain = drivetrain }
+                          ) ]
                 }
             | Command.AddPitNote(robotId, noteId, userId, text) ->
                 validation {
@@ -824,7 +931,15 @@ module Game =
                     let! robot = OnlyIf.robotExists game robotId
                     and! _ = Note.create userId text |> OnlyIf.mapNoteError
                     let! _ = Robot.addNote noteId robot |> OnlyIf.mapRobotError
-                    return [ Event.GameEvent.PitResultEvent(Event.PitResult.NoteAdded { Id = robotId; NoteId = noteId; UserId = userId; Text = text }) ]
+
+                    return
+                        [ Event.GameEvent.PitResultEvent(
+                              Event.PitResult.NoteAdded
+                                  { Id = robotId
+                                    NoteId = noteId
+                                    UserId = userId
+                                    Text = text }
+                          ) ]
                 }
             | Command.ChangePitNoteText(robotId, noteId, text) ->
                 validation {
@@ -832,19 +947,32 @@ module Game =
                     let! _ = OnlyIf.robotExists game robotId
                     and! note = OnlyIf.noteExists game noteId
                     let! _ = Note.edit text note |> OnlyIf.mapNoteError
-                    return [ Event.GameEvent.PitResultEvent(Event.PitResult.NoteTextChanged { Id = robotId; NoteId = noteId; Text = text }) ]
+
+                    return
+                        [ Event.GameEvent.PitResultEvent(
+                              Event.PitResult.NoteTextChanged
+                                  { Id = robotId
+                                    NoteId = noteId
+                                    Text = text }
+                          ) ]
                 }
             | Command.RemovePitNote(robotId, noteId) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! robot = OnlyIf.robotExists game robotId
                     let! _ = Robot.removeNote noteId robot |> OnlyIf.mapRobotError
-                    return [ Event.GameEvent.PitResultEvent(Event.PitResult.NoteRemoved { Id = robotId; NoteId = noteId }) ]
+
+                    return
+                        [ Event.GameEvent.PitResultEvent(Event.PitResult.NoteRemoved { Id = robotId; NoteId = noteId }) ]
                 }
             | Command.RecordScoutingResult(id, result) ->
                 validation {
                     let! _ = OnlyIf.gameStarted state
-                    return [ Event.GameEvent.ScoutingResultEvent(Event.ScoutingResult.Recorded { Id = id; Result = result }) ]
+
+                    return
+                        [ Event.GameEvent.ScoutingResultEvent(
+                              Event.ScoutingResult.Recorded { Id = id; Result = result }
+                          ) ]
                 }
             | Command.AddScoutingNote(scoutingResultId, noteId, userId, text) ->
                 validation {
@@ -852,7 +980,15 @@ module Game =
                     let! result = OnlyIf.scoutingResultExists game scoutingResultId
                     and! _ = Note.create userId text |> OnlyIf.mapNoteError
                     let! _ = ScoutingResult.addOrReplaceNote noteId result |> OnlyIf.mapScoutingResultError
-                    return [ Event.GameEvent.ScoutingResultEvent(Event.ScoutingResult.NoteAdded { Id = scoutingResultId; NoteId = noteId; UserId = userId; Text = text }) ]
+
+                    return
+                        [ Event.GameEvent.ScoutingResultEvent(
+                              Event.ScoutingResult.NoteAdded
+                                  { Id = scoutingResultId
+                                    NoteId = noteId
+                                    UserId = userId
+                                    Text = text }
+                          ) ]
                 }
             | Command.ChangeScoutingNoteText(scoutingResultId, noteId, text) ->
                 validation {
@@ -860,37 +996,70 @@ module Game =
                     let! _ = OnlyIf.scoutingResultExists game scoutingResultId
                     and! note = OnlyIf.noteExists game noteId
                     let! _ = Note.edit text note |> OnlyIf.mapNoteError
-                    return [ Event.GameEvent.ScoutingResultEvent(Event.ScoutingResult.NoteTextChanged { Id = scoutingResultId; NoteId = noteId; Text = text }) ]
+
+                    return
+                        [ Event.GameEvent.ScoutingResultEvent(
+                              Event.ScoutingResult.NoteTextChanged
+                                  { Id = scoutingResultId
+                                    NoteId = noteId
+                                    Text = text }
+                          ) ]
                 }
             | Command.RemoveScoutingNote(scoutingResultId, noteId) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! result = OnlyIf.scoutingResultExists game scoutingResultId
                     let! _ = ScoutingResult.removeNote noteId result |> OnlyIf.mapScoutingResultError
-                    return [ Event.GameEvent.ScoutingResultEvent(Event.ScoutingResult.NoteRemoved { Id = scoutingResultId; NoteId = noteId }) ]
+
+                    return
+                        [ Event.GameEvent.ScoutingResultEvent(
+                              Event.ScoutingResult.NoteRemoved
+                                  { Id = scoutingResultId
+                                    NoteId = noteId }
+                          ) ]
                 }
             | Command.DefineParameter(id, name, spec, category) ->
                 validation {
                     let! _ = OnlyIf.gameStarted state
-                    return [ Event.GameEvent.ParameterDefinitionEvent(Event.ParameterDefinition.Defined { Id = id; Name = name; Spec = spec; Category = category }) ]
+
+                    return
+                        [ Event.GameEvent.ParameterDefinitionEvent(
+                              Event.ParameterDefinition.Defined
+                                  { Id = id
+                                    Name = name
+                                    Spec = spec
+                                    Category = category }
+                          ) ]
                 }
             | Command.ChangeParameterName(id, name) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! _ = OnlyIf.parameterDefinitionExists game id
-                    return [ Event.GameEvent.ParameterDefinitionEvent(Event.ParameterDefinition.NameChanged { Id = id; Name = name }) ]
+
+                    return
+                        [ Event.GameEvent.ParameterDefinitionEvent(
+                              Event.ParameterDefinition.NameChanged { Id = id; Name = name }
+                          ) ]
                 }
             | Command.ChangeParameterSpec(id, spec) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! _ = OnlyIf.parameterDefinitionExists game id
-                    return [ Event.GameEvent.ParameterDefinitionEvent(Event.ParameterDefinition.SpecChanged { Id = id; Spec = spec }) ]
+
+                    return
+                        [ Event.GameEvent.ParameterDefinitionEvent(
+                              Event.ParameterDefinition.SpecChanged { Id = id; Spec = spec }
+                          ) ]
                 }
             | Command.ChangeParameterCategory(id, category) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! _ = OnlyIf.parameterDefinitionExists game id
-                    return [ Event.GameEvent.ParameterDefinitionEvent(Event.ParameterDefinition.CategoryChanged { Id = id; Category = category }) ]
+
+                    return
+                        [ Event.GameEvent.ParameterDefinitionEvent(
+                              Event.ParameterDefinition.CategoryChanged { Id = id; Category = category }
+                          ) ]
                 }
             | Command.SetPitParameterValue(robotId, definitionId, value) ->
                 validation {
@@ -898,20 +1067,35 @@ module Game =
                     let! robot = OnlyIf.robotExists game robotId
                     and! definition = OnlyIf.parameterDefinitionExists game definitionId
                     and! _ = GameValidation.parameterValueMatches game.ParameterDefinitions definitionId value
+
                     let! _ =
                         if definition.Category <> ParameterCategory.Pit then
-                             GameError.NotAPitParameter definitionId |> Validation.error
+                            GameError.NotAPitParameter definitionId |> Validation.error
                         else
-                             Validation.ok ()
+                            Validation.ok ()
+
                     let! _ = Robot.setPitScoutingParameter definitionId value robot |> OnlyIf.mapRobotError
-                    return [ Event.GameEvent.ParameterEvent(Event.Parameter.PitValueSet { RobotId = robotId; DefinitionId = definitionId; Value = value }) ]
+
+                    return
+                        [ Event.GameEvent.ParameterEvent(
+                              Event.Parameter.PitValueSet
+                                  { RobotId = robotId
+                                    DefinitionId = definitionId
+                                    Value = value }
+                          ) ]
                 }
             | Command.UnsetPitParameterValue(robotId, definitionId) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! robot = OnlyIf.robotExists game robotId
                     let! _ = Robot.removePitScoutingParameter definitionId robot |> OnlyIf.mapRobotError
-                    return [ Event.GameEvent.ParameterEvent(Event.Parameter.PitValueUnset { RobotId = robotId; DefinitionId = definitionId }) ]
+
+                    return
+                        [ Event.GameEvent.ParameterEvent(
+                              Event.Parameter.PitValueUnset
+                                  { RobotId = robotId
+                                    DefinitionId = definitionId }
+                          ) ]
                 }
             | Command.SetMatchParameterValue(scoutingResultId, definitionId, value) ->
                 validation {
@@ -919,20 +1103,40 @@ module Game =
                     let! result = OnlyIf.scoutingResultExists game scoutingResultId
                     and! definition = OnlyIf.parameterDefinitionExists game definitionId
                     and! _ = GameValidation.parameterValueMatches game.ParameterDefinitions definitionId value
+
                     let! _ =
                         if definition.Category <> ParameterCategory.Match then
-                             GameError.NotAMatchParameter definitionId |> Validation.error
+                            GameError.NotAMatchParameter definitionId |> Validation.error
                         else
-                             Validation.ok ()
-                    let! _ = ScoutingResult.setScoutingParameterValue definitionId value result |> OnlyIf.mapScoutingResultError
-                    return [ Event.GameEvent.ParameterEvent(Event.Parameter.MatchValueSet { ScoutingResultId = scoutingResultId; DefinitionId = definitionId; Value = value }) ]
+                            Validation.ok ()
+
+                    let! _ =
+                        ScoutingResult.setScoutingParameterValue definitionId value result
+                        |> OnlyIf.mapScoutingResultError
+
+                    return
+                        [ Event.GameEvent.ParameterEvent(
+                              Event.Parameter.MatchValueSet
+                                  { ScoutingResultId = scoutingResultId
+                                    DefinitionId = definitionId
+                                    Value = value }
+                          ) ]
                 }
             | Command.UnsetMatchParameterValue(scoutingResultId, definitionId) ->
                 validation {
                     let! game = OnlyIf.gameStarted state
                     let! result = OnlyIf.scoutingResultExists game scoutingResultId
-                    let! _ = ScoutingResult.unsetScoutingParameterValue definitionId result |> OnlyIf.mapScoutingResultError
-                    return [ Event.GameEvent.ParameterEvent(Event.Parameter.MatchValueUnset { ScoutingResultId = scoutingResultId; DefinitionId = definitionId }) ]
+
+                    let! _ =
+                        ScoutingResult.unsetScoutingParameterValue definitionId result
+                        |> OnlyIf.mapScoutingResultError
+
+                    return
+                        [ Event.GameEvent.ParameterEvent(
+                              Event.Parameter.MatchValueUnset
+                                  { ScoutingResultId = scoutingResultId
+                                    DefinitionId = definitionId }
+                          ) ]
                 }
 
     let definition =

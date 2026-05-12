@@ -1,11 +1,9 @@
 namespace ParagonRobotics.DiamondScout.Common
 
+open System.Collections.Generic
 open FsToolkit.ErrorHandling
 
-type TeamRegistry =
-    private
-    | Closed
-    | Open of teams: Set<TeamNumber>
+type TeamRegistry = private { Teams: Set<TeamNumber> }
 
 
 [<AutoOpen>]
@@ -65,3 +63,17 @@ module Functional =
         let initialState = { Teams = Set.empty }
 
         let definition = create initialState Event.evolve Command.decide
+
+type TeamRegistry with
+    static member RegisterTeam teamNumber =
+        (TeamRegistry.RegisterTeam teamNumber, TeamRegistry.definition.Init)
+        ||> TeamRegistry.definition.Decide
+        |> Validation.map _.ToReadOnlyList()
+
+    static member UnregisterTeam teamNumber =
+        (TeamRegistry.UnregisterTeam teamNumber, TeamRegistry.definition.Init)
+        ||> TeamRegistry.definition.Decide
+        |> Validation.map _.ToReadOnlyList()
+
+    static member Evolve(registry: TeamRegistry, events: TeamRegistry.Event IReadOnlyList) =
+        events |> _.FromReadOnlyList() |> foldEvents TeamRegistry.definition registry

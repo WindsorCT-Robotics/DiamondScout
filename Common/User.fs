@@ -5,6 +5,15 @@ open System.Collections.Generic
 open FsToolkit.ErrorHandling
 
 [<Struct>]
+type UserId =
+    private
+    | UserId of Guid
+
+    static member Zero = UserId Guid.Empty
+    static member Create() = Guid.CreateVersion7() |> UserId
+    member this.Value = let (UserId guid) = this in guid
+
+[<Struct>]
 type UserName = UserName of string
 
 [<Struct>]
@@ -27,7 +36,7 @@ type User =
     | NotRegistered
     | Inactive of UserData
     | Registered of UserData
-    
+
     member this.Evaluate(isEmpty: Action, isInactive: Action<UserData>, isActive: Action<UserData>) =
         match this with
         | NotRegistered -> isEmpty.Invoke()
@@ -65,7 +74,9 @@ module Functional =
             | NameNotProvided
             | RoleNotProvided
             | UserAlreadyDeactivated
-            member this.Handle(notCreatedHandler: Action, noNameHandler: Action, noRoleHandler: Action, userDeactivatedHandler: Action) =
+
+            member this.Handle
+                (notCreatedHandler: Action, noNameHandler: Action, noRoleHandler: Action, userDeactivatedHandler: Action) =
                 match this with
                 | UserNotCreated -> notCreatedHandler.Invoke()
                 | NameNotProvided -> noNameHandler.Invoke()
@@ -135,23 +146,34 @@ module Functional =
                         return name |> NameChanged |> List.singleton
                     }
 
-        let definition = AggregateDefinition.create User.NotRegistered Event.evolve Command.decide
+        let definition =
+            AggregateDefinition.create User.NotRegistered Event.evolve Command.decide
 
 type UserData with
     member this.IsAdmin = UserData.isAdmin this
     member this.isScouter = UserData.isScouter this
     member this.IsViewer = UserData.isViewer this
-        
+
 type User with
-    static member Register (name: UserName, role: Role) =
-        (UserData.Command.Register(name, role), NotRegistered) ||> UserData.definition.Decide |> Validation.map _.ToReadOnlyList()
-    static member ChangeName (user: User, newName: UserName) =
-        (UserData.Command.ChangeName(newName), user) ||> UserData.definition.Decide |> Validation.map _.ToReadOnlyList()
-    static member ChangeRole (user: User, newRole: Role) =
-        (UserData.Command.ChangeRole(newRole), user) ||> UserData.definition.Decide |> Validation.map _.ToReadOnlyList()
-    static member Deactivate (user: User) =
-        (UserData.Command.Deactivate, user) ||> UserData.definition.Decide |> Validation.map _.ToReadOnlyList()
-    static member Evolve (user: User, events: UserData.Event IReadOnlyList) =
-        events
-        |> _.FromReadOnlyList()
-        |> foldEvents UserData.definition user
+    static member Register(name: UserName, role: Role) =
+        (UserData.Command.Register(name, role), NotRegistered)
+        ||> UserData.definition.Decide
+        |> Validation.map _.ToReadOnlyList()
+
+    static member ChangeName(user: User, newName: UserName) =
+        (UserData.Command.ChangeName(newName), user)
+        ||> UserData.definition.Decide
+        |> Validation.map _.ToReadOnlyList()
+
+    static member ChangeRole(user: User, newRole: Role) =
+        (UserData.Command.ChangeRole(newRole), user)
+        ||> UserData.definition.Decide
+        |> Validation.map _.ToReadOnlyList()
+
+    static member Deactivate(user: User) =
+        (UserData.Command.Deactivate, user)
+        ||> UserData.definition.Decide
+        |> Validation.map _.ToReadOnlyList()
+
+    static member Evolve(user: User, events: UserData.Event IReadOnlyList) =
+        events |> _.FromReadOnlyList() |> foldEvents UserData.definition user
