@@ -23,8 +23,8 @@
     <Compile Include="TeamRegistry.fs" />
     <Compile Include="Period.fs" />
     <Compile Include="Scoring.fs" />
-    <Compile Include="GamePieces.fs" />
-    <Compile Include="GamePieceScoringRule.fs" />
+    <Compile Include="GamePiece.fs" />
+    <Compile Include="ScoringLedger.fs" />
     <Compile Include="Infractions.fs" />
     <Compile Include="ParameterDefinition.fs" />
     <Compile Include="ParameterValue.fs" />
