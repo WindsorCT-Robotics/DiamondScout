@@ -17,7 +17,6 @@ type GamePieceName = GamePieceName of string
 
 type GamePiece = private { Name: GamePieceName }
 
-
 [<RequireQualifiedAccess>]
 module GamePiece =
     type Error = | GamePieceNameEmpty

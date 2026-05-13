@@ -8,7 +8,10 @@ type GamePieceScoringRuleId =
     | GamePieceScoringRuleId of Guid
 
     static member Zero = GamePieceScoringRuleId Guid.Empty
-    static member Create() = Guid.CreateVersion7() |> GamePieceScoringRuleId
+
+    static member Create() =
+        Guid.CreateVersion7() |> GamePieceScoringRuleId
+
     member this.Value = let (GamePieceScoringRuleId guid) = this in guid
 
 type GamePieceScoringRule =
