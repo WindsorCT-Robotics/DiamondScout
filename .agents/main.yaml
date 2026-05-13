@@ -4,7 +4,7 @@ project:
   name: "diamondscout"
   description: "Paragon Robotics Scouting Application for FIRST Robotics Competition"
   language: F#, C#
-  framework: ASP.NET, Blazor, Fable.Remoting
+  framework: ASP.NET, Blazor, Fable.Remoting, Saturn
 
 layers:
   context: true

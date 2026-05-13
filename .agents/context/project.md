@@ -30,7 +30,18 @@ into three projects: Common (the Domain Layer), Application (the Application Lay
 The persistence layer will be implemented using KurrentDB (formerly known as EventStoreDB). Events will also be used to
 construct a PostgreSQL database in a separate project.
 
+### FRC API
+
+The FRC API is an external domain service that will be used for automatically (partially) filling in game data,
+match data, team data, and for ancillary statistical data in the UI when reviewing scouting data. The API is authenticated
+using an API key. They key is formatted as such: UserName:APIKey where UserName is the FRC username and APIKey is the
+API key for that user. That key is then converted to Base64 and used as the Authorization header for the API. 
+
 ## Architecture
+
+The application is event-driven and event-sourced, following Domain-Driven Design principles. Functional purity is
+enforced throughout the application, with mutable types being defined as Classes and only used at program boundaries
+when interacting with naturally impure constructs (Date/Time, web, infrastructure, etc.).
 
 ### Domain
 
@@ -65,11 +76,96 @@ Events will also be used to construct a database. An event handler specifically 
 using Entity Framework Core. This allows for the state of the database to be reconstructed from the event store
 if necessary. The database will be a PostgreSQL database.
 
+
+### Application
+
+The Application layer will be implemented using F# in the `Application` project. It will be used as the glue between the
+domain layer, persistence layer, and the API. Cross-cutting concerns (for example, logging) will be handled in this project.
+
+The domain layer defines the core business logic, and the application layer will use the domain layer along with application services to implement the
+application logic.
+
+### API
+
+The API layer will be implemented using F# in the `API` project. This project will be used to expose the application layer
+to the outside world. It will be implemented using Fable.Remoting and the Saturn F# framework for making ASP.NET Core
+more functional.
+
+### Frontend
+
+#### Razor Class Library
+
+Controls and components will be defined in the RCL. This RCL will be used by both a MAUI Hybrid application and a
+Blazor WebAssembly application. The RCL will use an F# shim library to interface with the API. The RCL will use this shim library's
+functions to implement component behaviors.
+
+#### RCL Shim Library
+
+The shim library will be used by the RCL to implement component behaviors. It will be an F# library that will be used to
+interface with the API using Fable.Remoting. It will also ensure that the exposed functions appear as idiomatic C# to
+the RCL, which itself must be written in C#.
+
+#### MAUI Hybrid Application
+
+The MAUI Hybrid application will be used to deploy to Android and iOS. It will be a C# application that will use the RCL
+to implement the UI.
+
+#### Blazor WebAssembly Application
+
+The Blazor WebAssembly application will be used to deploy to the web (and potentially Desktop using a wrapper like Electron).
+It will be a C# application that will use the RCL to implement the UI.
+
 ## Conventions
 
-<!-- List coding conventions, naming rules, and patterns agents should follow. -->
+For F# code, follow the [F# Coding Conventions](https://learn.microsoft.com/en-us/dotnet/fsharp/style-guide/conventions).
+
+For C# code, follow the [C# Dotnet Runtime Coding Conventions](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/coding-style.md).
+
+For F# code that will be consumed by C# code, ensure that the final shape of public `type`s appear to C# consumers as
+idiomatic C# types that follow the [C# Dotnet Runtime Coding Conventions](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/coding-style.md)
+
+In F#, namespaces should be used instead of modules for top-level code. Types should be defined in namespaces. Types
+should not be defined in modules unless they are not used anywhere else. Modules that define functions that operate on
+specific types should be defined in modules with the same name as the type (underneath an `[<AutoOpen>]`
+module named `Functional` if the library is intended for use by both F# and C#). Public functions in the `Functional`
+module should be exposed as `static members` in the type they operate on using Type Extensions (e.g., `type Entity with ...`).
+For these kinds of Type Extensions, they must be defined in the same file as the original type and its `Functional` module.
+Type Extensions used outside of the file the original type is defined in do not appear to C# consumers. It is imperative
+that the type, its `Functional` module, and the Type Extension are all defined in the same file in that order.
+
+Modules and Domain Types should be marked as `[<RequireQualifiedAccess>]` to reduce collisions.
+
+Data should be as private as possible, including `let` bindings and constructors. Public functions should be the main
+way to interact with data. Since data is immutable where possible, functions return new instances instead of modifying
+the original. C# consumers should not be able to modify data directly, and should be informed that functions return
+new instances instead of modifying the original.
+
+All public functions should include comprehensive xmldoc comments, including parameter descriptions, exceptions that may be thrown,
+and return values.
+
+### Error Handling
+
+Exceptions should be used for exceptional problems. Domain errors (e.g., expected errors that may commonly occur or otherwise
+logically extend the domain) should be represented as a Discriminated Union. Functions that may fail should return a
+`Validation<T>` instead of throwing an exception and allow the caller to handle the error as it sees fit.
+
+The caller should handle errors (explicitly through a type like `Validation`, `Option`, `ValueOption`, or `Choice`)
+unless the error is unrecoverable.
+
+
+## MCPs
+
+If the Glider MCP is available, it should be used for interacting with .NET source files. Tasks that require inspecting
+or modifying .NET source files should begin by first loading the Solution into Glider with file watching enabled.
+
+If the Filesystem MCP is available, it should be used for interacting with the file system.
 
 ## Do Not Touch
 
-Currently, no files are off-limits. Destructive actions require approval. ***Do not perform destructive actions without
-approval.***
+All API keys are completely off-limits and should not be used by any agents for any reason without express permission.
+
+Destructive actions (e.g., deletes, file rewrites) require human approval. ***Do not perform destructive actions without explicit permission.***
+
+Agents should warn users before doing work on unclean git working directories. Agents should prefer to work on clean git
+working directories and remind users to commit their work before invoking any agents. Agents should not commit their work
+unless they are explicitly told to.
