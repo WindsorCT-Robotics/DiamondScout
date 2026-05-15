@@ -1,6 +1,4 @@
-namespace ParagonRobotics.DiamondScout.Common
-
-open ParagonRobotics.DiamondScout.Common.Functional
+namespace ParagonRobotics.DiamondScout.Common.Parameters
 
 type ParameterValue =
     | DropdownChoice of index: int

@@ -1,4 +1,4 @@
-﻿namespace ParagonRobotics.DiamondScout.Common
+﻿namespace ParagonRobotics.DiamondScout.Common.Robots
 
 open System
 open FsToolkit.ErrorHandling

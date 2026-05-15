@@ -1,4 +1,4 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.GamePieces
 
 open System
 open FsToolkit.ErrorHandling
@@ -17,25 +17,31 @@ type GamePieceName = GamePieceName of string
 
 type GamePiece = private { Name: GamePieceName }
 
-[<RequireQualifiedAccess>]
-module GamePiece =
-    type Error = | GamePieceNameEmpty
+type Error = | GamePieceNameEmpty
 
-    module private OnlyIf =
-        let nameNotEmpty (GamePieceName name as gamePieceName) =
-            match String.IsNullOrWhiteSpace name with
-            | true -> GamePieceNameEmpty |> Validation.error
-            | false -> gamePieceName |> Validation.ok
+module private OnlyIf =
+    let nameNotEmpty (GamePieceName name as gamePieceName) =
+        match String.IsNullOrWhiteSpace name with
+        | true -> GamePieceNameEmpty |> Validation.error
+        | false -> gamePieceName |> Validation.ok
 
-    let create name =
-        validation {
-            let! name = OnlyIf.nameNotEmpty name
+[<AutoOpen>]
+module Functional =
+    [<RequireQualifiedAccess>]
+    module GamePiece =
+        let create name =
+            validation {
+                let! name = OnlyIf.nameNotEmpty name
 
-            return { Name = name }
-        }
+                return { Name = name }
+            }
 
-    let withName name piece =
-        validation {
-            let! name = OnlyIf.nameNotEmpty name
-            return { piece with GamePiece.Name = name }
-        }
+        let withName name piece =
+            validation {
+                let! name = OnlyIf.nameNotEmpty name
+                return { piece with GamePiece.Name = name }
+            }
+
+type GamePiece with
+    static member Create name = GamePiece.create name
+    static member Rename name piece = GamePiece.withName name piece

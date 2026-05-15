@@ -1,4 +1,4 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Infractions
 
 open System
 open FsToolkit.ErrorHandling
@@ -41,37 +41,39 @@ type Infraction =
           Severity: Foul voption
           Card: Card voption }
 
-[<RequireQualifiedAccess>]
-module Infraction =
-    type Error = | InfractionNameEmpty
+[<AutoOpen>]
+module Functional =
+    [<RequireQualifiedAccess>]
+    module Infraction =
+        type Error = | InfractionNameEmpty
 
-    module private OnlyIf =
-        let nameNotEmpty (InfractionName name as infractionName) =
-            match String.IsNullOrWhiteSpace name with
-            | true -> InfractionNameEmpty |> Validation.error
-            | false -> infractionName |> Validation.ok
+        module private OnlyIf =
+            let nameNotEmpty (InfractionName name as infractionName) =
+                match String.IsNullOrWhiteSpace name with
+                | true -> InfractionNameEmpty |> Validation.error
+                | false -> infractionName |> Validation.ok
 
-    let create card severity name =
-        validation {
-            let! name = OnlyIf.nameNotEmpty name
+        let create card severity name =
+            validation {
+                let! name = OnlyIf.nameNotEmpty name
 
-            return
-                { Name = name
-                  Severity = severity
-                  Card = card }
-        }
+                return
+                    { Name = name
+                      Severity = severity
+                      Card = card }
+            }
 
-    let changeName infraction name =
-        validation {
-            let! name = OnlyIf.nameNotEmpty name
+        let changeName infraction name =
+            validation {
+                let! name = OnlyIf.nameNotEmpty name
 
-            return
-                { infraction with
-                    Infraction.Name = name }
-        }
+                return
+                    { infraction with
+                        Infraction.Name = name }
+            }
 
-    let changeSeverity infraction severity = { infraction with Severity = severity }
-    let changeCard infraction card = { infraction with Card = card }
+        let changeSeverity infraction severity = { infraction with Severity = severity }
+        let changeCard infraction card = { infraction with Card = card }
 
 type Infraction with
     static member Create name severity card = Infraction.create card severity name

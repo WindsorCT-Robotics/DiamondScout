@@ -1139,8 +1139,8 @@ module Game =
                           ) ]
                 }
 
-    let definition =
-        AggregateDefinition.create GameState.GameNotStarted Event.evolve Command.decide
+    let state =
+        Aggregate.create GameState.GameNotStarted Event.evolve Command.decide
 
     let start name year : Event.GameEvent =
         Event.GameEvent.Started { Name = name; Year = year }

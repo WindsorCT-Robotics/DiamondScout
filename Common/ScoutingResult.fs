@@ -1,7 +1,15 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Matches
 
 open System
 open FsToolkit.ErrorHandling
+open ParagonRobotics.DiamondScout.Common.Infractions
+open ParagonRobotics.DiamondScout.Common.Notes
+open ParagonRobotics.DiamondScout.Common.Periods
+open ParagonRobotics.DiamondScout.Common.Scoring
+open ParagonRobotics.DiamondScout.Common.Teams
+open ParagonRobotics.DiamondScout.Common.GamePieces
+open ParagonRobotics.DiamondScout.Common.Parameters
+open ParagonRobotics.DiamondScout.Common.Robots
 
 [<Struct>]
 type ScoutingResultId =

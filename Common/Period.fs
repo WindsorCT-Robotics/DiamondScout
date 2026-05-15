@@ -1,4 +1,4 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Periods
 
 open System
 open FsToolkit.ErrorHandling
@@ -32,170 +32,173 @@ type Periods =
         { Autonomous: TimeframeId list
           Teleop: TimeframeId list
           AllTimeframes: Map<TimeframeId, Timeframe> }
-
+        
 [<RequireQualifiedAccess>]
-module Timeframe =
-    type Error =
-        | TimeframeNameEmpty
-        | TimeframeDurationTooShort
-        | TimeframeAlreadyExists of TimeframeName
-        | TimeframeDoesNotExist of TimeframeName
+type TimeframeError =
+    | NameEmpty
+    | DurationTooShort
+    | AlreadyExists of TimeframeName
+    | DoesNotExist of TimeframeName
 
-    module private OnlyIf =
-        let nameNotEmpty (TimeframeName name as timeframeName) =
-            match String.IsNullOrWhiteSpace name with
-            | true -> TimeframeNameEmpty |> Validation.error
-            | false -> timeframeName |> Validation.ok
+[<AutoOpen>]
+module Functional =
+    [<RequireQualifiedAccess>]
+    module Timeframe =
+        module private OnlyIf =
+            let nameNotEmpty (TimeframeName name as timeframeName) =
+                match String.IsNullOrWhiteSpace name with
+                | true -> TimeframeError.NameEmpty |> Validation.error
+                | false -> timeframeName |> Validation.ok
 
-        let durationNotTooShort (TimeframeDuration duration as timeframeDuration) =
-            match duration < TimeSpan.FromSeconds 1.0 with
-            | true -> TimeframeDurationTooShort |> Validation.error
-            | false -> timeframeDuration |> Validation.ok
+            let durationNotTooShort (TimeframeDuration duration as timeframeDuration) =
+                match duration < TimeSpan.FromSeconds 1.0 with
+                | true -> TimeframeError.DurationTooShort |> Validation.error
+                | false -> timeframeDuration |> Validation.ok
 
-        let nameExists (timeframes: Timeframe list) name =
-            match timeframes |> List.exists (fun t -> t.Name = name) with
-            | true -> Validation.ok name
-            | false -> TimeframeDoesNotExist name |> Validation.error
+            let nameExists (timeframes: Timeframe list) name =
+                match timeframes |> List.exists (fun t -> t.Name = name) with
+                | true -> Validation.ok name
+                | false -> TimeframeError.DoesNotExist name |> Validation.error
 
-        let nameDoesNotExist (timeframes: Timeframe list) name =
-            match timeframes |> List.exists (fun t -> t.Name = name) with
-            | true -> TimeframeAlreadyExists name |> Validation.error
-            | false -> Validation.ok name
+            let nameDoesNotExist (timeframes: Timeframe list) name =
+                match timeframes |> List.exists (fun t -> t.Name = name) with
+                | true -> TimeframeError.AlreadyExists name |> Validation.error
+                | false -> Validation.ok name
 
-    let getTimeframes period periods =
-        let ids =
-            match period with
-            | Autonomous -> periods.Autonomous
-            | Teleop -> periods.Teleop
-
-        ids |> List.choose periods.AllTimeframes.TryFind
-
-    let withTimeframes period timeframeIdList periods =
-        match period with
-        | Autonomous ->
-            { periods with
-                Autonomous = timeframeIdList }
-        | Teleop ->
-            { periods with
-                Teleop = timeframeIdList }
-
-    let addTimeframe period id name duration periods =
-        let timeframeList = getTimeframes period periods
-
-        validation {
-            let! name = OnlyIf.nameNotEmpty name
-            let! _ = OnlyIf.nameDoesNotExist timeframeList name
-            let! duration = OnlyIf.durationNotTooShort duration
-
-            let newTimeframe = { Name = name; Duration = duration }
-
+        let getTimeframes period periods =
             let ids =
                 match period with
                 | Autonomous -> periods.Autonomous
                 | Teleop -> periods.Teleop
 
-            let updatedIds = ids @ [ id ]
-            let updatedAll = periods.AllTimeframes |> Map.add id newTimeframe
+            ids |> List.choose periods.AllTimeframes.TryFind
 
-            return
+        let withTimeframes period timeframeIdList periods =
+            match period with
+            | Autonomous ->
                 { periods with
-                    AllTimeframes = updatedAll }
-                |> withTimeframes period updatedIds
-        }
+                    Autonomous = timeframeIdList }
+            | Teleop ->
+                { periods with
+                    Teleop = timeframeIdList }
 
-    let updateTimeframe period name newName duration periods =
-        let timeframeList = getTimeframes period periods
+        let addTimeframe period id name duration periods =
+            let timeframeList = getTimeframes period periods
 
-        validation {
-            let! name = OnlyIf.nameNotEmpty name
-            let! _ = OnlyIf.nameExists timeframeList name
-            let! newName = OnlyIf.nameNotEmpty newName
-            let! duration = OnlyIf.durationNotTooShort duration
+            validation {
+                let! name = OnlyIf.nameNotEmpty name
+                let! _ = OnlyIf.nameDoesNotExist timeframeList name
+                let! duration = OnlyIf.durationNotTooShort duration
 
-            let! _ =
-                if name <> newName then
-                    OnlyIf.nameDoesNotExist timeframeList newName
-                else
-                    Validation.ok newName
+                let newTimeframe = { Name = name; Duration = duration }
 
-            let timeframeId =
-                periods.AllTimeframes
-                |> Map.tryPick (fun id t -> if t.Name = name then Some id else None)
-
-            match timeframeId with
-            | None -> return periods // Should not happen if nameExists passed
-            | Some id ->
-                let updatedTimeframe = { Name = newName; Duration = duration }
-                let updatedAll = periods.AllTimeframes |> Map.add id updatedTimeframe
-
-                return
-                    { periods with
-                        AllTimeframes = updatedAll }
-        }
-
-    let removeTimeframe period name periods =
-        let timeframeList = getTimeframes period periods
-
-        validation {
-            let! name = OnlyIf.nameExists timeframeList name
-
-            let timeframeId =
-                periods.AllTimeframes
-                |> Map.tryPick (fun id t -> if t.Name = name then Some id else None)
-
-            match timeframeId with
-            | None -> return periods
-            | Some id ->
                 let ids =
                     match period with
                     | Autonomous -> periods.Autonomous
                     | Teleop -> periods.Teleop
 
-                let updatedIds = ids |> List.filter (fun tId -> tId <> id)
-                let updatedAll = periods.AllTimeframes |> Map.remove id
+                let updatedIds = ids @ [ id ]
+                let updatedAll = periods.AllTimeframes |> Map.add id newTimeframe
 
                 return
                     { periods with
                         AllTimeframes = updatedAll }
                     |> withTimeframes period updatedIds
-        }
+            }
 
-    type Direction =
-        | Up
-        | Down
+        let updateTimeframe period name newName duration periods =
+            let timeframeList = getTimeframes period periods
 
-    let moveTimeframe period name direction periods =
-        let timeframeList = getTimeframes period periods
+            validation {
+                let! name = OnlyIf.nameNotEmpty name
+                let! _ = OnlyIf.nameExists timeframeList name
+                let! newName = OnlyIf.nameNotEmpty newName
+                let! duration = OnlyIf.durationNotTooShort duration
 
-        let swap i j list =
-            let arr = List.toArray list
-            let temp = arr[i]
-            arr[i] <- arr[j]
-            arr[j] <- temp
-            List.ofArray arr
+                let! _ =
+                    if name <> newName then
+                        OnlyIf.nameDoesNotExist timeframeList newName
+                    else
+                        Validation.ok newName
 
-        validation {
-            let! name = OnlyIf.nameExists timeframeList name
+                let timeframeId =
+                    periods.AllTimeframes
+                    |> Map.tryPick (fun id t -> if t.Name = name then Some id else None)
 
-            let timeframeId =
-                periods.AllTimeframes
-                |> Map.tryPick (fun id t -> if t.Name = name then Some id else None)
+                match timeframeId with
+                | None -> return periods // Should not happen if nameExists passed
+                | Some id ->
+                    let updatedTimeframe = { Name = newName; Duration = duration }
+                    let updatedAll = periods.AllTimeframes |> Map.add id updatedTimeframe
 
-            match timeframeId with
-            | None -> return periods
-            | Some id ->
-                let ids =
-                    match period with
-                    | Autonomous -> periods.Autonomous
-                    | Teleop -> periods.Teleop
+                    return
+                        { periods with
+                            AllTimeframes = updatedAll }
+            }
 
-                let index = ids |> List.findIndex (fun tId -> tId = id)
+        let removeTimeframe period name periods =
+            let timeframeList = getTimeframes period periods
 
-                let updatedIds =
-                    match direction with
-                    | Up when index > 0 -> swap index (index - 1) ids
-                    | Down when index < ids.Length - 1 -> swap index (index + 1) ids
-                    | _ -> ids
+            validation {
+                let! name = OnlyIf.nameExists timeframeList name
 
-                return periods |> withTimeframes period updatedIds
-        }
+                let timeframeId =
+                    periods.AllTimeframes
+                    |> Map.tryPick (fun id t -> if t.Name = name then Some id else None)
+
+                match timeframeId with
+                | None -> return periods
+                | Some id ->
+                    let ids =
+                        match period with
+                        | Autonomous -> periods.Autonomous
+                        | Teleop -> periods.Teleop
+
+                    let updatedIds = ids |> List.filter (fun tId -> tId <> id)
+                    let updatedAll = periods.AllTimeframes |> Map.remove id
+
+                    return
+                        { periods with
+                            AllTimeframes = updatedAll }
+                        |> withTimeframes period updatedIds
+            }
+
+        type Direction =
+            | Up
+            | Down
+
+        let moveTimeframe period name direction periods =
+            let timeframeList = getTimeframes period periods
+
+            let swap i j list =
+                let arr = List.toArray list
+                let temp = arr[i]
+                arr[i] <- arr[j]
+                arr[j] <- temp
+                List.ofArray arr
+
+            validation {
+                let! name = OnlyIf.nameExists timeframeList name
+
+                let timeframeId =
+                    periods.AllTimeframes
+                    |> Map.tryPick (fun id t -> if t.Name = name then Some id else None)
+
+                match timeframeId with
+                | None -> return periods
+                | Some id ->
+                    let ids =
+                        match period with
+                        | Autonomous -> periods.Autonomous
+                        | Teleop -> periods.Teleop
+
+                    let index = ids |> List.findIndex (fun tId -> tId = id)
+
+                    let updatedIds =
+                        match direction with
+                        | Up when index > 0 -> swap index (index - 1) ids
+                        | Down when index < ids.Length - 1 -> swap index (index + 1) ids
+                        | _ -> ids
+
+                    return periods |> withTimeframes period updatedIds
+            }

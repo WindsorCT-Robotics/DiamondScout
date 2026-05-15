@@ -8,10 +8,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Include="EventStore.fs" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\Common\Common.fsproj" />
     </ItemGroup>
 

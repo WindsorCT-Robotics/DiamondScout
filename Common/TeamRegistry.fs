@@ -1,34 +1,37 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.TeamRegistries
 
 open System.Collections.Generic
 open FsToolkit.ErrorHandling
+open ParagonRobotics.DiamondScout.Common
+open ParagonRobotics.DiamondScout.Common.Teams
 
 type TeamRegistry = private { Teams: Set<TeamNumber> }
 
+[<RequireQualifiedAccess>]
+module Events =
+    type Command =
+        | RegisterTeam of TeamNumber
+        | UnregisterTeam of TeamNumber
+
+    type Error =
+        | TeamAlreadyRegistered of TeamNumber
+        | TeamNotRegistered of TeamNumber
+
+    type Event =
+        | TeamRegistered of TeamNumber
+        | TeamUnregistered of TeamNumber
 
 [<AutoOpen>]
 module Functional =
     [<RequireQualifiedAccess>]
     module TeamRegistry =
-        type Command =
-            | RegisterTeam of TeamNumber
-            | UnregisterTeam of TeamNumber
-
-        type Error =
-            | TeamAlreadyRegistered of TeamNumber
-            | TeamNotRegistered of TeamNumber
-
-        type Event =
-            | TeamRegistered of TeamNumber
-            | TeamUnregistered of TeamNumber
-
         module private Event =
             let evolve registry event =
                 match event with
-                | TeamRegistered teamNumber ->
+                | Events.Event.TeamRegistered teamNumber ->
                     { registry with
                         Teams = registry.Teams.Add teamNumber }
-                | TeamUnregistered teamNumber ->
+                | Events.Event.TeamUnregistered teamNumber ->
                     { registry with
                         Teams = registry.Teams.Remove teamNumber }
 
@@ -37,43 +40,43 @@ module Functional =
             let teamIsRegistered registry teamNumber =
                 match registry.Teams.Contains teamNumber with
                 | true -> Validation.ok teamNumber
-                | false -> teamNumber |> TeamNotRegistered |> Validation.error
+                | false -> teamNumber |> Events.Error.TeamNotRegistered |> Validation.error
 
             let teamIsNotRegistered registry teamNumber =
                 match registry.Teams.Contains teamNumber with
-                | true -> teamNumber |> TeamAlreadyRegistered |> Validation.error
+                | true -> teamNumber |> Events.Error.TeamAlreadyRegistered |> Validation.error
                 | false -> Validation.ok teamNumber
 
         module private Command =
             let decide command registry =
                 match command with
-                | RegisterTeam teamNumber ->
+                | Events.Command.RegisterTeam teamNumber ->
                     validation {
                         let! teamNumber = OnlyIf.teamIsNotRegistered registry teamNumber
 
-                        return TeamRegistered teamNumber |> List.singleton
+                        return Events.Event.TeamRegistered teamNumber |> List.singleton
                     }
-                | UnregisterTeam teamNumber ->
+                | Events.Command.UnregisterTeam teamNumber ->
                     validation {
                         let! teamNumber = OnlyIf.teamIsRegistered registry teamNumber
 
-                        return TeamUnregistered teamNumber |> List.singleton
+                        return Events.Event.TeamUnregistered teamNumber |> List.singleton
                     }
 
         let initialState = { Teams = Set.empty }
 
-        let definition = create initialState Event.evolve Command.decide
+        let state = Aggregate.create initialState Event.evolve Command.decide
 
 type TeamRegistry with
     static member RegisterTeam teamNumber =
-        (TeamRegistry.RegisterTeam teamNumber, TeamRegistry.definition.Init)
-        ||> TeamRegistry.definition.Decide
+        (Events.Command.RegisterTeam teamNumber, TeamRegistry.state.Init)
+        ||> TeamRegistry.state.Decide
         |> Validation.map _.ToReadOnlyList()
 
     static member UnregisterTeam teamNumber =
-        (TeamRegistry.UnregisterTeam teamNumber, TeamRegistry.definition.Init)
-        ||> TeamRegistry.definition.Decide
+        (Events.Command.UnregisterTeam teamNumber, TeamRegistry.state.Init)
+        ||> TeamRegistry.state.Decide
         |> Validation.map _.ToReadOnlyList()
 
-    static member Evolve(registry: TeamRegistry, events: TeamRegistry.Event IReadOnlyList) =
-        events |> _.FromReadOnlyList() |> foldEvents TeamRegistry.definition registry
+    static member Evolve(registry: TeamRegistry, events: Events.Event IReadOnlyList) =
+        events |> _.FromReadOnlyList() |> Aggregate.fold TeamRegistry.state registry
