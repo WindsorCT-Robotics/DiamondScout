@@ -38,3 +38,5 @@ module Functional =
 type ParameterValue with
     static member DefaultValue(def: ParameterDefinition) = ParameterValue.defaultValue def
     static member IsValid (spec: ParameterSpec) (value: ParameterValue) = ParameterValue.isValid spec value
+
+type ScoutingParameters<'TKey when 'TKey: comparison> = Map<ParameterDefinition, Map<'TKey, ParameterValue>>

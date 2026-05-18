@@ -32,7 +32,7 @@ type Periods =
         { Autonomous: TimeframeId list
           Teleop: TimeframeId list
           AllTimeframes: Map<TimeframeId, Timeframe> }
-        
+
 [<RequireQualifiedAccess>]
 type TimeframeError =
     | NameEmpty

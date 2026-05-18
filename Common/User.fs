@@ -65,7 +65,8 @@ module Events =
         | UserAlreadyDeactivated
 
         member this.Handle
-            (notCreatedHandler: Action, noNameHandler: Action, noRoleHandler: Action, userDeactivatedHandler: Action) =
+            (notCreatedHandler: Action, noNameHandler: Action, noRoleHandler: Action, userDeactivatedHandler: Action)
+            =
             match this with
             | UserNotCreated -> notCreatedHandler.Invoke()
             | NameNotProvided -> noNameHandler.Invoke()
@@ -148,8 +149,7 @@ module Functional =
                         return name |> Events.Event.NameChanged |> List.singleton
                     }
 
-        let state =
-            Aggregate.create User.NotRegistered Event.evolve Command.decide
+        let state = Aggregate.create User.NotRegistered Event.evolve Command.decide
 
 type UserData with
     member this.IsAdmin = UserData.isAdmin this

@@ -34,23 +34,13 @@ type ParameterSpec =
     | MultiSelect of options: string list * defaultChoices: int list
     | Checkbox of defaultState: bool
 
-[<RequireQualifiedAccess>]
-type ParameterCategory =
-    | Pit
-    | Match
-
 type ParameterDefinition =
     { Name: ParameterDefinitionName
-      Spec: ParameterSpec
-      Category: ParameterCategory }
+      Spec: ParameterSpec }
 
 [<RequireQualifiedAccess>]
 module ParameterDefinition =
-    let create name spec category =
-        { Name = name
-          Spec = spec
-          Category = category }
+    let create name spec = { Name = name; Spec = spec }
 
     let withName name (param: ParameterDefinition) = { param with Name = name }
     let withSpec spec (param: ParameterDefinition) = { param with Spec = spec }
-    let withCategory category (param: ParameterDefinition) = { param with Category = category }

@@ -34,15 +34,10 @@ type Aggregate<'state, 'command, 'event, 'error> with
         Aggregate.create initialState (fun s e -> evolver.Invoke(s, e)) (fun c s ->
             decider.Invoke(c, s) |> Validation.map _.FromReadOnlyList())
 
-    static member Rehydrate
-        (state: Aggregate<'state, 'command, 'event, 'error>, events: IReadOnlyList<'event>)
-        =
+    static member Rehydrate(state: Aggregate<'state, 'command, 'event, 'error>, events: IReadOnlyList<'event>) =
         events |> _.FromReadOnlyList() |> Aggregate.rehydrate state
 
     static member Append
-        (
-            state: Aggregate<'state, 'command, 'event, 'error>,
-            startingState: 'state,
-            events: IReadOnlyList<'event>
-        ) =
+        (state: Aggregate<'state, 'command, 'event, 'error>, startingState: 'state, events: IReadOnlyList<'event>)
+        =
         events |> _.FromReadOnlyList() |> Aggregate.fold state startingState

@@ -67,6 +67,17 @@ type Error =
     | ParameterDoesNotExist of ParameterDefinitionId
     | RobotNameEmpty
 
+    member this.Handle
+        (
+            handleParameterExists: Action<ParameterDefinitionId>,
+            handleParameterDoesNotExist: Action<ParameterDefinitionId>,
+            handleRobotNameEmpty: Action
+        ) =
+        match this with
+        | ParameterExists id -> handleParameterExists.Invoke(id)
+        | ParameterDoesNotExist id -> handleParameterDoesNotExist.Invoke(id)
+        | RobotNameEmpty -> handleRobotNameEmpty.Invoke()
+
 [<RequireQualifiedAccess>]
 module Robot =
     [<RequireQualifiedAccess>]
@@ -121,7 +132,9 @@ module Robot =
         validation {
             let! parameterId = OnlyIf.parameterExists parameterId robot
 
-            return { robot with PitScoutingParameters = robot.PitScoutingParameters.Add(parameterId, value) }
+            return
+                { robot with
+                    PitScoutingParameters = robot.PitScoutingParameters.Add(parameterId, value) }
         }
 
     let removePitScoutingParameter parameterId robot =

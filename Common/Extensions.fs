@@ -25,10 +25,12 @@ type ListExtensions() =
 
 type MapExtensions() =
     [<Extension>]
-    static member inline ToReadOnlyDictionary<'TKey , 'TValue when 'TKey:comparison> (fSharpMap: Map<'TKey, 'TValue>) =
+    static member inline ToReadOnlyDictionary<'TKey, 'TValue when 'TKey: comparison>(fSharpMap: Map<'TKey, 'TValue>) =
         fSharpMap :> IReadOnlyDictionary<'TKey, 'TValue>
 
-    static member inline FromReadOnlyDictionary<'TKey , 'TValue when 'TKey:comparison> (readOnlyDictionary: IReadOnlyDictionary<'TKey,'TValue>) =
+    static member inline FromReadOnlyDictionary<'TKey, 'TValue when 'TKey: comparison>
+        (readOnlyDictionary: IReadOnlyDictionary<'TKey, 'TValue>)
+        =
         match readOnlyDictionary with
         | :? Map<'TKey, 'TValue> as map -> map
         | readOnlyDictionary -> readOnlyDictionary.AsEnumerable() |> Seq.map (|KeyValue|) |> Map.ofSeq

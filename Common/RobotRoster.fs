@@ -1,1 +1,0 @@
-namespace ParagonRobotics.DiamondScout.Common.RobotRosters

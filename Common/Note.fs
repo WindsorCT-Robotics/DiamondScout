@@ -80,7 +80,8 @@ module Functional =
                 |> NoteState.Created
             | NoteState.NotCreated as notCreated, _ -> notCreated
             | NoteState.Created _ as note, Events.Event.Created _ -> note
-            | NoteState.Created note, Events.Event.Edited newContent -> { note with Content = newContent } |> NoteState.Created
+            | NoteState.Created note, Events.Event.Edited newContent ->
+                { note with Content = newContent } |> NoteState.Created
 
         let private decide command state =
             match command with
