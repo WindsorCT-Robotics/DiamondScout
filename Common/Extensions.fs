@@ -2,6 +2,7 @@ namespace ParagonRobotics.DiamondScout.Common
 
 open System
 open System.Collections.Generic
+open System.Linq
 open System.Runtime.CompilerServices
 open FSharp.Collections
 
@@ -21,3 +22,13 @@ type ListExtensions() =
         match readOnlyList with
         | :? list<'T> as list -> list
         | readOnlyList -> readOnlyList |> Seq.toList
+
+type MapExtensions() =
+    [<Extension>]
+    static member inline ToReadOnlyDictionary<'TKey , 'TValue when 'TKey:comparison> (fSharpMap: Map<'TKey, 'TValue>) =
+        fSharpMap :> IReadOnlyDictionary<'TKey, 'TValue>
+
+    static member inline FromReadOnlyDictionary<'TKey , 'TValue when 'TKey:comparison> (readOnlyDictionary: IReadOnlyDictionary<'TKey,'TValue>) =
+        match readOnlyDictionary with
+        | :? Map<'TKey, 'TValue> as map -> map
+        | readOnlyDictionary -> readOnlyDictionary.AsEnumerable() |> Seq.map (|KeyValue|) |> Map.ofSeq

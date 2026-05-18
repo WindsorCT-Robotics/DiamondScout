@@ -3,8 +3,8 @@
 This document outlines the coding standards and architectural patterns for the DiamondScout project. AI agents should follow these rules when generating or refactoring code.
 
 ## General Principles
-- **Language**: F# latest (net10.0).
-- **Architecture**: Domain-Driven Design (DDD) with a focus on functional purity and event sourcing principles.
+- **Language**: F# Latest or C# Latest using the latest .NET version (currently .NET 10). F# shall be used for all domain code and any code that is mission-critical. C# shall be used for front-end code and when interfacing with external systems.
+- **Architecture**: Domain-Driven Design (DDD) with a focus on functional purity and event sourcing principles for domain and data access; Best practices for Blazor WASM, Blazor Hybrid, and RCL libraries.
 - **Namespaces**: Use `ParagonRobotics.DiamondScout.ProjectName.*` hierarchy, where ProjectName is the name of the project (e.g., `ParagonRobotics.DiamondScout.Common` for the Common library).
 
 ## Domain Modeling
@@ -12,7 +12,7 @@ This document outlines the coding standards and architectural patterns for the D
 ### Basic Design Principles
 
 - Constructors should be `private` for complex domain objects. Value types should be marked as `[<Struct>]` and should not have `private` constructors.
-- This project is expected to be consumed from both C# and F#.
+- The `Common` project (and other domain layer projects) is expected to be consumed from both C# and F#.
   - F# functional-style module definitions and let bindings should be included in an `[<AutoOpen>]` `Functional` module.
   - Domain types should be extended with `static member` functions that call the functional-style code in the `Functional` module.
     - The API of the `static member` functions should use generic interfaces to prevent C# consumers from having to deal with F# types.
@@ -48,10 +48,12 @@ This document outlines the coding standards and architectural patterns for the D
 - DUs should have a method to allow C# consumers to easily match on the DU. The function does not necessarily need to be named `Match` but should be descriptive based on the domain concept the DU is modeling.
 - Apply `[<RequireQualifiedAccess>]` to DUs and modules where ambiguity might occur.
 - Use `[<Struct>]` for small value-like types to optimize performance.
+- In C# code, use `struct record` for types that would have otherwise been a `[<Struct>]` attribute  type in F#.
+- In C# code, use `record` to eliminate boilerplate and eliminate primitive obsession.
 
 ### Aggregate Patterns
-- Use the `decide` and `evolve` pattern for domain logic by creating an instance of the `AggregateDefinition` type.
-- The `Init` member of the `AggregateDefinition` should express the initial state of the aggregate. Many times, this will be a DU with a case representing the initial state of the aggregate and a case representing an initialized aggregate with instance data.
+- Use the `decide` and `evolve` pattern for domain logic by creating an instance of the `Aggregate` type.
+- The `Init` member of the `Aggregate` should express the initial state of the aggregate. Many times, this will be a DU with a case representing the initial state of the aggregate and a case representing an initialized aggregate with instance data.
   - The initial state might have a perfectly logical zero or empty state that can be used instead of creating a DU.
   - The initial state should be a proper domain representation of an aggregate that has not been created yet; the name of the initial state should adequately express the domain concept.
 - `evolve`: `'state -> 'event -> 'state` (Updates state based on events).
@@ -65,14 +67,15 @@ This document outlines the coding standards and architectural patterns for the D
   - Use the `and!` operator to chain validations, unless validation must be short-circuited.
   - Use `Validation.map` to transform results.
   - Use `Validation.mapError` to transform errors.
-  - Prefer `validation { ... }` computation expressions to mapping, applying, and chaining validations.
+  - Prefer `validation { ... }` computation expressions for mapping, applying, and chaining validations.
 - Define domain-specific `Error` DUs.
     - All errors should be defined in an `Errors` DU. Relevant data to the error should be included in an error's DU case.
     - Errors are expected to be evaluated and handled by the application layer. Assumptions should not be made about the severity of an error.
     - Only the most exceptional errors in the domain should be raised exceptions. This should imply that the error is not recoverable and the application should exit to protect the system or data integrity.
+    - Error types should expose a function that can be used to handle errors by supplying functions to handle each error type to improve ergonomics when consuming from C#.
 
 ## Style and Formatting
-- **Indentation**: 4 spaces.
+- **Indentation**: 4 spaces in both C# and F#.
 - **Record Formatting**: Align fields vertically.
   ```fsharp
   { Field1: Type1
@@ -80,7 +83,7 @@ This document outlines the coding standards and architectural patterns for the D
   ```
 - **Piping**: Use `|>` for forward piping and `||>` for double-argument piping where appropriate.
 - **Documentation**: Use XML doc comments (`///`) for all public types, modules, and members.
-- **Naming**: 
+- **Naming (F#)**: 
   - PascalCase for types, modules, and members.
   - camelCase for local variables and parameters.
   - Use descriptive names reflecting the domain (e.g., `TeamNumber`, `Points`).
@@ -88,7 +91,6 @@ This document outlines the coding standards and architectural patterns for the D
 ## Project Structure
 - `Common`: Domain models, value objects, domain services, and core logic.
 - `Application`: Command handlers, event storage, and application services.
-- `SyncContract`: Data transfer objects and serialization logic.
 - `DiamondScout.Api`: ASP.NET Core API.
 
 ## Specific Patterns

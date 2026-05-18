@@ -2,6 +2,10 @@
 
 open System
 open FsToolkit.ErrorHandling
+open ParagonRobotics.DiamondScout.Common.Notebooks
+open ParagonRobotics.DiamondScout.Common.Scoring
+open ParagonRobotics.DiamondScout.Common.Parameters
+open ParagonRobotics.DiamondScout.Common.Teams
 
 [<Struct>]
 type RobotId =
@@ -56,17 +60,15 @@ type Robot =
       EndgameCapable: EndgameCapable
       Drivetrain: Drivetrain
       PitScoutingParameters: Map<ParameterDefinitionId, ParameterValue>
-      Notes: NoteId list }
+      Notes: NotebookId }
+
+type Error =
+    | ParameterExists of ParameterDefinitionId
+    | ParameterDoesNotExist of ParameterDefinitionId
+    | RobotNameEmpty
 
 [<RequireQualifiedAccess>]
 module Robot =
-    type Error =
-        | ParameterExists of ParameterDefinitionId
-        | ParameterDoesNotExist of ParameterDefinitionId
-        | RobotNameEmpty
-        | DuplicateNote of noteId: NoteId
-        | NoteNotFound of noteId: NoteId
-
     [<RequireQualifiedAccess>]
     module private OnlyIf =
         let parameterDoesNotExist parameterId robot =
@@ -84,17 +86,7 @@ module Robot =
             | true -> RobotNameEmpty |> Validation.error
             | false -> robotName |> Validation.ok
 
-        let noteIdUnique robot noteId =
-            match List.contains noteId robot.Notes with
-            | true -> noteId |> DuplicateNote |> Validation.error
-            | false -> noteId |> Validation.ok
-
-        let noteExists robot noteId =
-            match List.contains noteId robot.Notes with
-            | true -> noteId |> Validation.ok
-            | false -> noteId |> NoteNotFound |> Validation.error
-
-    let createWithParameters name team endgameCapability pitScoutingParams drivetrain =
+    let createWithParameters name team endgameCapability pitScoutingParams drivetrain notebook =
         validation {
             let! name = OnlyIf.robotNameNotEmpty name
 
@@ -104,11 +96,11 @@ module Robot =
                   EndgameCapable = endgameCapability
                   Drivetrain = drivetrain
                   PitScoutingParameters = pitScoutingParams
-                  Notes = [] }
+                  Notes = notebook }
         }
 
-    let create name team endgameCapability drivetrain =
-        createWithParameters name team endgameCapability Map.empty drivetrain
+    let create name team endgameCapability drivetrain notebook =
+        createWithParameters name team endgameCapability Map.empty drivetrain notebook
 
     let withEndgameCapabilities endgameCapability robot =
         { robot with
@@ -116,31 +108,20 @@ module Robot =
 
     let withDrivetrain drivetrain robot = { robot with Drivetrain = drivetrain }
 
-    let addNote noteId robot =
-        validation {
-            let! noteId = OnlyIf.noteIdUnique robot noteId
-
-            return
-                { robot with
-                    Robot.Notes = noteId :: robot.Notes }
-        }
-
-    let removeNote noteId robot =
-        validation {
-            let! noteId = OnlyIf.noteExists robot noteId
-
-            return
-                { robot with
-                    Robot.Notes = robot.Notes |> List.filter (fun id -> id <> noteId) }
-        }
-
-    let setPitScoutingParameter parameterId value robot =
+    let addPitScoutingParameter parameterId value robot =
         validation {
             let! parameterId = OnlyIf.parameterDoesNotExist parameterId robot
 
             return
                 { robot with
                     PitScoutingParameters = robot.PitScoutingParameters.Add(parameterId, value) }
+        }
+
+    let changePitScoutingParameter parameterId value robot =
+        validation {
+            let! parameterId = OnlyIf.parameterExists parameterId robot
+
+            return { robot with PitScoutingParameters = robot.PitScoutingParameters.Add(parameterId, value) }
         }
 
     let removePitScoutingParameter parameterId robot =

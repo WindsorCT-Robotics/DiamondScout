@@ -114,11 +114,6 @@ type ScoreRecord =
       Tier: ScoringTier
       Phase: TimeframeId }
 
-    static member create gamePiece tier phase =
-        { GamePiece = gamePiece
-          Tier = tier
-          Phase = phase }
-
 type ScoutingData =
     { Team: TeamId
       MatchDetails: EventMatchDetails
@@ -134,241 +129,245 @@ type ScoutingData =
 type ScoutingResult =
     | Finalized of ScoutingData
     | Scouting of ScoutingData
-    | NotStarted
+    | NotStarted of ScoutingData
 
-[<RequireQualifiedAccess>]
-module ScoutingResult =
-    type Error =
-        | ScoutingNotStarted
-        | ScoutingResultFinalized
-        | ScoutingInProgress
-        | ParameterExists of ParameterDefinitionId
-        | ParameterDoesNotExist of ParameterDefinitionId
-        | DuplicateNote of noteId: NoteId
-        | NoteNotFound of noteId: NoteId
-        | InvalidTeamId of teamId: TeamId
-        | InvalidInfractionId of infractionId: InfractionId
-        | InvalidParameterId of parameterId: ParameterDefinitionId
-        | InvalidNoteId of noteId: NoteId
-        | InvalidTimeframeId of timeframeId: TimeframeId
+type Error =
+    | ScoutingNotStarted
+    | ScoutingResultFinalized
+    | ScoutingInProgress
+    | ParameterExists of ParameterDefinitionId
+    | ParameterDoesNotExist of ParameterDefinitionId
+    | DuplicateNote of noteId: NoteId
+    | NoteNotFound of noteId: NoteId
+    | InvalidTeamId of teamId: TeamId
+    | InvalidInfractionId of infractionId: InfractionId
+    | InvalidParameterId of parameterId: ParameterDefinitionId
+    | InvalidNoteId of noteId: NoteId
+    | InvalidTimeframeId of timeframeId: TimeframeId
 
+
+[<AutoOpen>]
+module Functional =
     [<RequireQualifiedAccess>]
-    module private OnlyIf =
-        let scoutingIsNotStarted scoutingResult =
-            match scoutingResult with
-            | ScoutingResult.NotStarted -> Validation.ok ()
-            | ScoutingResult.Scouting _ -> Error.ScoutingInProgress |> Validation.error
-            | ScoutingResult.Finalized _ -> Error.ScoutingResultFinalized |> Validation.error
+    module ScoutingResult =
+        [<RequireQualifiedAccess>]
+        module private OnlyIf =
+            let scoutingIsNotStarted scoutingResult =
+                match scoutingResult with
+                | ScoutingResult.NotStarted _ -> Validation.ok ()
+                | ScoutingResult.Scouting _ -> Error.ScoutingInProgress |> Validation.error
+                | ScoutingResult.Finalized _ -> Error.ScoutingResultFinalized |> Validation.error
 
-        let scoutingIsStarted scoutingResult =
-            match scoutingResult with
-            | ScoutingResult.Scouting data -> data |> Validation.ok
-            | ScoutingResult.Finalized data -> data |> Validation.ok
-            | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
+            let scoutingIsStarted scoutingResult =
+                match scoutingResult with
+                | ScoutingResult.Scouting data -> data |> Validation.ok
+                | ScoutingResult.Finalized data -> data |> Validation.ok
+                | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
 
-        let scoutingIsInProgress scoutingResult =
-            match scoutingResult with
-            | ScoutingResult.Scouting data -> data |> Validation.ok
-            | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
-            | ScoutingResult.Finalized _ -> Error.ScoutingResultFinalized |> Validation.error
+            let scoutingIsInProgress scoutingResult =
+                match scoutingResult with
+                | ScoutingResult.Scouting data -> data |> Validation.ok
+                | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
+                | ScoutingResult.Finalized _ -> Error.ScoutingResultFinalized |> Validation.error
 
-        let parameterDoesNotExist scoutingData parameterId =
-            match scoutingData.ScoutingParameters.ContainsKey parameterId with
-            | true -> ParameterExists parameterId |> Validation.error
-            | false -> parameterId |> Validation.ok
+            let parameterDoesNotExist scoutingData parameterId =
+                match scoutingData.ScoutingParameters.ContainsKey parameterId with
+                | true -> ParameterExists parameterId |> Validation.error
+                | false -> parameterId |> Validation.ok
 
-        let parameterExists scoutingData parameterId =
-            match scoutingData.ScoutingParameters.ContainsKey parameterId with
-            | true -> parameterId |> Validation.ok
-            | false -> ParameterDoesNotExist parameterId |> Validation.error
+            let parameterExists scoutingData parameterId =
+                match scoutingData.ScoutingParameters.ContainsKey parameterId with
+                | true -> parameterId |> Validation.ok
+                | false -> ParameterDoesNotExist parameterId |> Validation.error
 
-        let noteIdUnique scoutingData noteId =
-            match List.contains noteId scoutingData.Notes with
-            | true -> noteId |> DuplicateNote |> Validation.error
-            | false -> noteId |> Validation.ok
+            let noteIdUnique scoutingData noteId =
+                match List.contains noteId scoutingData.Notes with
+                | true -> noteId |> DuplicateNote |> Validation.error
+                | false -> noteId |> Validation.ok
 
-        let noteExists scoutingData noteId =
-            match List.contains noteId scoutingData.Notes with
-            | true -> noteId |> Validation.ok
-            | false -> noteId |> NoteNotFound |> Validation.error
+            let noteExists scoutingData noteId =
+                match List.contains noteId scoutingData.Notes with
+                | true -> noteId |> Validation.ok
+                | false -> noteId |> NoteNotFound |> Validation.error
 
-        let teamIdValid teamId =
-            match teamId = TeamId.Zero with
-            | true -> teamId |> InvalidTeamId |> Validation.error
-            | false -> teamId |> Validation.ok
+            let teamIdValid teamId =
+                match teamId = TeamId.Zero with
+                | true -> teamId |> InvalidTeamId |> Validation.error
+                | false -> teamId |> Validation.ok
 
-        let infractionIdValid infractionId =
-            match infractionId = InfractionId.Zero with
-            | true -> infractionId |> InvalidInfractionId |> Validation.error
-            | false -> infractionId |> Validation.ok
+            let infractionIdValid infractionId =
+                match infractionId = InfractionId.Zero with
+                | true -> infractionId |> InvalidInfractionId |> Validation.error
+                | false -> infractionId |> Validation.ok
 
-        let parameterIdValid parameterId =
-            match parameterId = ParameterDefinitionId.Zero with
-            | true -> parameterId |> InvalidParameterId |> Validation.error
-            | false -> parameterId |> Validation.ok
+            let parameterIdValid parameterId =
+                match parameterId = ParameterDefinitionId.Zero with
+                | true -> parameterId |> InvalidParameterId |> Validation.error
+                | false -> parameterId |> Validation.ok
 
-        let noteIdValid noteId =
-            match noteId = NoteId.Zero with
-            | true -> noteId |> InvalidNoteId |> Validation.error
-            | false -> noteId |> Validation.ok
+            let noteIdValid noteId =
+                match noteId = NoteId.Zero with
+                | true -> noteId |> InvalidNoteId |> Validation.error
+                | false -> noteId |> Validation.ok
 
-        let timeframeIdValid timeframeId =
-            match timeframeId = TimeframeId.Zero with
-            | true -> timeframeId |> Error.InvalidTimeframeId |> Validation.error
-            | false -> timeframeId |> Validation.ok
+            let timeframeIdValid timeframeId =
+                match timeframeId = TimeframeId.Zero with
+                | true -> timeframeId |> Error.InvalidTimeframeId |> Validation.error
+                | false -> timeframeId |> Validation.ok
 
-        let scoutingIsFinalized scoutingResult =
-            match scoutingResult with
-            | ScoutingResult.Finalized data -> data |> Validation.ok
-            | ScoutingResult.Scouting _ -> Error.ScoutingInProgress |> Validation.error
-            | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
+            let scoutingIsFinalized scoutingResult =
+                match scoutingResult with
+                | ScoutingResult.Finalized data -> data |> Validation.ok
+                | ScoutingResult.Scouting _ -> Error.ScoutingInProgress |> Validation.error
+                | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
 
-    let startScouting team alliance endgameCapability matchDetails =
-        validation {
-            let! team = OnlyIf.teamIdValid team
+        let startScouting team alliance endgameCapability matchDetails =
+            validation {
+                do! OnlyIf.scoutingIsNotStarted ScoutingResult.NotStarted
+                let! team = OnlyIf.teamIdValid team
 
-            return
-                { Team = team
-                  Alliance = alliance
-                  MatchDetails = matchDetails
-                  Scores = []
-                  Endgame =
-                    { Capable = endgameCapability
-                      Result = EndgameResult.NotAttempted }
-                  Breakdowns = []
-                  ScoutingParameters = Map.empty
-                  Infractions = List.empty
-                  Notes = [] }
-                |> ScoutingResult.Scouting
-        }
-
-    let changeMatchDetails matchDetails scoutingResult =
-        validation {
-            match scoutingResult with
-            | ScoutingResult.Scouting scoutingData ->
                 return
-                    { scoutingData with
-                        MatchDetails = matchDetails }
+                    { Team = team
+                      Alliance = alliance
+                      MatchDetails = matchDetails
+                      Scores = []
+                      Endgame =
+                        { Capable = endgameCapability
+                          Result = EndgameResult.NotAttempted }
+                      Breakdowns = []
+                      ScoutingParameters = Map.empty
+                      Infractions = List.empty
+                      Notes = [] }
                     |> ScoutingResult.Scouting
-            | ScoutingResult.Finalized scoutingData ->
+            }
+
+        let changeMatchDetails matchDetails scoutingResult =
+            validation {
+                match scoutingResult with
+                | ScoutingResult.Scouting scoutingData ->
+                    return
+                        { scoutingData with
+                            MatchDetails = matchDetails }
+                        |> ScoutingResult.Scouting
+                | ScoutingResult.Finalized scoutingData ->
+                    return
+                        { scoutingData with
+                            MatchDetails = matchDetails }
+                        |> ScoutingResult.Finalized
+                | ScoutingResult.NotStarted -> return! Error.ScoutingNotStarted |> Validation.error
+            }
+
+        let recordScore phase gamePiece tier scoutingResult =
+            validation {
+                let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
+                let! phase = OnlyIf.timeframeIdValid phase
+
                 return
                     { scoutingData with
-                        MatchDetails = matchDetails }
-                    |> ScoutingResult.Finalized
-            | ScoutingResult.NotStarted -> return! Error.ScoutingNotStarted |> Validation.error
-        }
+                        Scores =
+                            let newScore = ScoreRecord.Create gamePiece tier phase
+                            newScore :: scoutingData.Scores }
+                    |> ScoutingResult.Scouting
+            }
 
-    let recordScore phase gamePiece tier scoutingResult =
-        validation {
-            let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
-            let! phase = OnlyIf.timeframeIdValid phase
+        let recordBreakdown breakdownData scoutingResult =
+            validation {
+                let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
 
-            return
-                { scoutingData with
-                    Scores =
-                        let newScore = ScoreRecord.create gamePiece tier phase
-                        newScore :: scoutingData.Scores }
-                |> ScoutingResult.Scouting
-        }
+                return
+                    { scoutingData with
+                        Breakdowns = breakdownData :: scoutingData.Breakdowns }
+                    |> ScoutingResult.Scouting
+            }
 
-    let recordBreakdown breakdownData scoutingResult =
-        validation {
-            let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
+        let recordInfraction infractionId scoutingResult =
+            validation {
+                let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
+                let! infractionId = OnlyIf.infractionIdValid infractionId
 
-            return
-                { scoutingData with
-                    Breakdowns = breakdownData :: scoutingData.Breakdowns }
-                |> ScoutingResult.Scouting
-        }
+                return
+                    { scoutingData with
+                        Infractions = infractionId :: scoutingData.Infractions }
+                    |> ScoutingResult.Scouting
+            }
 
-    let recordInfraction infractionId scoutingResult =
-        validation {
-            let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
-            let! infractionId = OnlyIf.infractionIdValid infractionId
+        let recordEndgame endgameData scoutingResult =
+            validation {
+                let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
 
-            return
-                { scoutingData with
-                    Infractions = infractionId :: scoutingData.Infractions }
-                |> ScoutingResult.Scouting
-        }
+                return
+                    { scoutingData with
+                        ScoutingData.Endgame.Result = endgameData }
+                    |> ScoutingResult.Scouting
+            }
 
-    let recordEndgame endgameData scoutingResult =
-        validation {
-            let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
+        let addOrReplaceNote noteId scoutingResult =
+            validation {
+                let! scoutingData = OnlyIf.scoutingIsStarted scoutingResult
 
-            return
-                { scoutingData with
-                    ScoutingData.Endgame.Result = endgameData }
-                |> ScoutingResult.Scouting
-        }
+                let updatedData =
+                    { scoutingData with
+                        Notes = noteId :: scoutingData.Notes }
 
-    let addOrReplaceNote noteId scoutingResult =
-        validation {
-            let! scoutingData = OnlyIf.scoutingIsStarted scoutingResult
+                return
+                    match scoutingResult with
+                    | ScoutingResult.Scouting _ -> ScoutingResult.Scouting updatedData
+                    | ScoutingResult.Finalized _ -> ScoutingResult.Finalized updatedData
+                    | _ -> invalidOp "There is no scouting result to add a note to."
+            }
 
-            let updatedData =
-                { scoutingData with
-                    Notes = noteId :: scoutingData.Notes }
+        let removeNote noteId scoutingResult =
+            validation {
+                let! scoutingData = OnlyIf.scoutingIsStarted scoutingResult
 
-            return
-                match scoutingResult with
-                | ScoutingResult.Scouting _ -> ScoutingResult.Scouting updatedData
-                | ScoutingResult.Finalized _ -> ScoutingResult.Finalized updatedData
-                | _ -> invalidOp "There is no scouting result to add a note to."
-        }
+                let updatedData =
+                    { scoutingData with
+                        Notes = scoutingData.Notes |> List.filter (fun id -> id <> noteId) }
 
-    let removeNote noteId scoutingResult =
-        validation {
-            let! scoutingData = OnlyIf.scoutingIsStarted scoutingResult
+                return
+                    match scoutingResult with
+                    | ScoutingResult.Scouting _ -> ScoutingResult.Scouting updatedData
+                    | ScoutingResult.Finalized _ -> ScoutingResult.Finalized updatedData
+                    | _ -> invalidOp "There is no scouting result to remove a note from."
+            }
 
-            let updatedData =
-                { scoutingData with
-                    Notes = scoutingData.Notes |> List.filter (fun id -> id <> noteId) }
+        let setScoutingParameterValue parameterId value scoutingResult =
+            validation {
+                let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
+                let! parameterId = OnlyIf.parameterIdValid parameterId
+                let! parameterId = OnlyIf.parameterDoesNotExist scoutingData parameterId
 
-            return
-                match scoutingResult with
-                | ScoutingResult.Scouting _ -> ScoutingResult.Scouting updatedData
-                | ScoutingResult.Finalized _ -> ScoutingResult.Finalized updatedData
-                | _ -> invalidOp "There is no scouting result to remove a note from."
-        }
+                return
+                    { scoutingData with
+                        ScoutingParameters = scoutingData.ScoutingParameters |> Map.add parameterId value }
+                    |> ScoutingResult.Scouting
+            }
 
-    let setScoutingParameterValue parameterId value scoutingResult =
-        validation {
-            let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
-            let! parameterId = OnlyIf.parameterIdValid parameterId
-            let! parameterId = OnlyIf.parameterDoesNotExist scoutingData parameterId
+        let unsetScoutingParameterValue parameterId scoutingResult =
+            validation {
+                let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
+                let! parameterId = OnlyIf.parameterIdValid parameterId
+                let! parameterId = OnlyIf.parameterExists scoutingData parameterId
 
-            return
-                { scoutingData with
-                    ScoutingParameters = scoutingData.ScoutingParameters |> Map.add parameterId value }
-                |> ScoutingResult.Scouting
-        }
+                return
+                    { scoutingData with
+                        ScoutingParameters = scoutingData.ScoutingParameters |> Map.remove parameterId }
+                    |> ScoutingResult.Scouting
+            }
 
-    let unsetScoutingParameterValue parameterId scoutingResult =
-        validation {
-            let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
-            let! parameterId = OnlyIf.parameterIdValid parameterId
-            let! parameterId = OnlyIf.parameterExists scoutingData parameterId
+        let mustBeFinalized scoutingResult =
+            OnlyIf.scoutingIsFinalized scoutingResult
 
-            return
-                { scoutingData with
-                    ScoutingParameters = scoutingData.ScoutingParameters |> Map.remove parameterId }
-                |> ScoutingResult.Scouting
-        }
+        let finalize scoutingData =
+            validation {
+                let! scoutingData = OnlyIf.scoutingIsInProgress scoutingData
 
-    let mustBeFinalized scoutingResult =
-        OnlyIf.scoutingIsFinalized scoutingResult
+                return ScoutingResult.Finalized scoutingData
+            }
 
-    let finalize scoutingData =
-        validation {
-            let! scoutingData = OnlyIf.scoutingIsInProgress scoutingData
+        let reopen scoutingData =
+            validation {
+                let! scoutingData = OnlyIf.scoutingIsFinalized scoutingData
 
-            return ScoutingResult.Finalized scoutingData
-        }
-
-    let reopen scoutingData =
-        validation {
-            let! scoutingData = OnlyIf.scoutingIsFinalized scoutingData
-
-            return ScoutingResult.Scouting scoutingData
-        }
+                return ScoutingResult.Scouting scoutingData
+            }

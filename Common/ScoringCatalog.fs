@@ -1,7 +1,9 @@
 ﻿namespace ParagonRobotics.DiamondScout.Common.ScoringCatalogs
 
 open System
+open System.Collections.Generic
 open FsToolkit.ErrorHandling
+open ParagonRobotics.DiamondScout.Common
 open ParagonRobotics.DiamondScout.Common.GamePieces
 open ParagonRobotics.DiamondScout.Common.Periods
 open ParagonRobotics.DiamondScout.Common.Scoring
@@ -29,16 +31,22 @@ type Error =
     | ScoringCatalogNotOpen
     | GamePieceNotFound of gamePiece: GamePieceId
     | TimeframeNotFound of struct (GamePieceId * TimeframeId)
+    | ValueExistsForTimeframe of struct (GamePieceId * TimeframeId * ScoreValue)
+    | ValueDoesNotExistForTimeframe of struct (GamePieceId * TimeframeId)
     member this.Handle(
         handleAlreadyOpenCatalog: Action,
         handleUnopenedCatalog: Action,
         handleMissingGamePiece: Action<GamePieceId>,
-        handleMissingTimeframe: Action<GamePieceId, TimeframeId>) =
+        handleMissingTimeframe: Action<GamePieceId, TimeframeId>,
+        handleNonExistentValue: Action<GamePieceId, TimeframeId>,
+        handleAlreadyExistingValue: Action<GamePieceId, TimeframeId, ScoreValue>) =
             match this with
             | ScoringCatalogAlreadyOpen -> handleAlreadyOpenCatalog.Invoke()
             | ScoringCatalogNotOpen -> handleUnopenedCatalog.Invoke()
             | GamePieceNotFound gamePiece -> handleMissingGamePiece.Invoke(gamePiece)
             | TimeframeNotFound (gamePiece, timeframe) -> handleMissingTimeframe.Invoke(gamePiece, timeframe)
+            | ValueExistsForTimeframe (gamePiece, timeframe, value) -> handleAlreadyExistingValue.Invoke(gamePiece, timeframe, value)
+            | ValueDoesNotExistForTimeframe (gamePiece, timeframe) -> handleNonExistentValue.Invoke(gamePiece, timeframe)
 
 [<AutoOpen>]
 module Functional =
@@ -46,14 +54,14 @@ module Functional =
     module ScoringCatalog =
         [<RequireQualifiedAccess>]
         module OnlyIf =
-            let catalogOpen catalog =
+            let catalogClosed catalog =
                 match catalog with
                 | ScoringCatalog.Closed -> Validation.ok catalog
                 | ScoringCatalog.Open _ -> ScoringCatalogAlreadyOpen |> Validation.error
                 
-            let catalogClosed catalog =
+            let catalogOpen catalog =
                 match catalog with
-                | ScoringCatalog.Closed -> ScoringCatalogAlreadyOpen |> Validation.error
+                | ScoringCatalog.Closed -> ScoringCatalogNotOpen |> Validation.error
                 | ScoringCatalog.Open data -> Validation.ok data
                 
             let gamePieceExists data (gamePiece: GamePieceId) =
@@ -65,7 +73,17 @@ module Functional =
                 match data |> Map.find gamePiece |> Map.containsKey timeframe with
                 | true -> Validation.ok data
                 | false -> TimeframeNotFound (gamePiece, timeframe) |> Validation.error
-                
+
+            let valueDoesNotExist data gamePiece timeframe =
+                match data |> Map.find gamePiece |> Map.containsKey timeframe with
+                | true -> ValueExistsForTimeframe (gamePiece, timeframe, data |> Map.find gamePiece |> Map.find timeframe) |> Validation.error
+                | false -> Validation.ok data
+
+            let valueExists data gamePiece timeframe =
+                match data |> Map.find gamePiece |> Map.containsKey timeframe with
+                | true -> Validation.ok data
+                | false -> ValueDoesNotExistForTimeframe (gamePiece, timeframe) |> Validation.error
+
         [<RequireQualifiedAccess>]
         module ScoringCatalog =
             let ``open`` catalog =
@@ -74,8 +92,37 @@ module Functional =
                     
                     return ScoringCatalog.Open Map.empty
                 }
+
             let addValue gamePiece timeFrame scoringValue catalog =
                 validation {
                     let! data = OnlyIf.catalogOpen catalog
-                    let! data 
+                    let! data = OnlyIf.valueDoesNotExist data gamePiece timeFrame
+
+                    return
+                        data |> Map.add gamePiece (data |> Map.find gamePiece |> Map.add timeFrame scoringValue) |> ScoringCatalog.Open
                 }
+
+            let removeValue gamePiece timeFrame catalog =
+                validation {
+                    let! data = OnlyIf.catalogOpen catalog
+                    let! data = OnlyIf.gamePieceExists data gamePiece
+                    let! data = OnlyIf.timeframeExists data gamePiece timeFrame
+
+                    return data |> Map.change gamePiece (Option.map (Map.remove timeFrame)) |> ScoringCatalog.Open
+                }
+
+            let changeValue gamePiece timeFrame scoringValue catalog =
+                validation {
+                    let! data = OnlyIf.catalogOpen catalog
+                    let! data = OnlyIf.gamePieceExists data gamePiece
+                    let! data = OnlyIf.timeframeExists data gamePiece timeFrame
+                    let! data = OnlyIf.valueExists data gamePiece timeFrame
+
+                    return data |> Map.change gamePiece (Option.map (Map.add timeFrame scoringValue)) |> ScoringCatalog.Open
+                }
+
+type ScoringCatalog with
+    member this.Values : IReadOnlyDictionary<GamePieceId, IReadOnlyDictionary<TimeframeId, ScoreValue>> | null =
+        match this with
+        | ScoringCatalog.Open data -> data |> Map.map (fun _ tf -> tf.ToReadOnlyDictionary()) |> _.ToReadOnlyDictionary()
+        | ScoringCatalog.Closed -> null

@@ -74,10 +74,3 @@ module Functional =
 
         let changeSeverity infraction severity = { infraction with Severity = severity }
         let changeCard infraction card = { infraction with Card = card }
-
-type Infraction with
-    static member Create name severity card = Infraction.create card severity name
-
-    member this.ChangeName name = Infraction.changeName this name
-    member this.ChangeSeverity severity = Infraction.changeSeverity this severity
-    member this.ChangeCard card = Infraction.changeCard this card
