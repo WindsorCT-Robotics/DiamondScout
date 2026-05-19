@@ -29,6 +29,7 @@
     <Compile Include="ParameterDefinition.fs" />
     <Compile Include="ParameterValue.fs" />
     <Compile Include="RobotData.fs" />
+    <Compile Include="Matches.fs" />
     <Compile Include="ScoutingResult.fs" />
     <Compile Include="Entrants.fs" />
     <Compile Include="Game.fs" />

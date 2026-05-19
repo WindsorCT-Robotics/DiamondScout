@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 open FsToolkit.ErrorHandling
 open ParagonRobotics.DiamondScout.Common
+open ParagonRobotics.DiamondScout.Common.Aggregates
 
 [<Struct>]
 type UserId =
@@ -158,23 +159,23 @@ type UserData with
 
 type User with
     static member Register(name: UserName, role: Role) =
-        (Events.Command.Register(name, role), User.NotRegistered)
-        ||> UserData.state.Decide
+        (Events.Command.Register(name, role), Aggregate.init UserData.state)
+        ||> Aggregate.decide UserData.state
         |> Validation.map _.ToReadOnlyList()
 
     static member ChangeName(user: User, newName: UserName) =
         (Events.Command.ChangeName(newName), user)
-        ||> UserData.state.Decide
+        ||> Aggregate.decide UserData.state
         |> Validation.map _.ToReadOnlyList()
 
     static member ChangeRole(user: User, newRole: Role) =
         (Events.Command.ChangeRole(newRole), user)
-        ||> UserData.state.Decide
+        ||> Aggregate.decide UserData.state
         |> Validation.map _.ToReadOnlyList()
 
     static member Deactivate(user: User) =
         (Events.Command.Deactivate, user)
-        ||> UserData.state.Decide
+        ||> Aggregate.decide UserData.state
         |> Validation.map _.ToReadOnlyList()
 
     static member Evolve(user: User, events: Events.Event IReadOnlyList) =

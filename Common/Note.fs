@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 open FsToolkit.ErrorHandling
 open ParagonRobotics.DiamondScout.Common
+open ParagonRobotics.DiamondScout.Common.Aggregates
 open ParagonRobotics.DiamondScout.Common.Users
 
 [<Struct>]
@@ -101,19 +102,17 @@ module Functional =
                 }
 
         let state =
-            { Init = NoteState.NotCreated
-              Decide = decide
-              Evolve = evolve }
+            Aggregate.create NoteState.NotCreated evolve decide
 
 type Note with
     static member Create userId dateAdded content =
-        (Events.Command.Create(userId, dateAdded, content), NoteState.NotCreated)
-        ||> Note.state.Decide
+        (Events.Command.Create(userId, dateAdded, content), Aggregate.init Note.state)
+        ||> Aggregate.decide Note.state
         |> Validation.map _.ToReadOnlyList()
 
     static member Edit content note =
         (Events.Command.Edit content, note)
-        ||> Note.state.Decide
+        ||> Aggregate.decide Note.state
         |> Validation.map _.ToReadOnlyList()
 
     static member Evolve note (events: IReadOnlyList<Events.Event>) =

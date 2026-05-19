@@ -5,6 +5,7 @@ open System.Collections.Generic
 open FsToolkit.ErrorHandling
 open FSharp.Core
 open ParagonRobotics.DiamondScout.Common
+open ParagonRobotics.DiamondScout.Common.Aggregates
 open ParagonRobotics.DiamondScout.Common.Notes
 
 [<Struct>]
@@ -123,18 +124,18 @@ module Functional =
 
 type Notebook with
     static member Create name =
-        (Events.Command.Create name, Notebook.state.Init)
-        ||> Notebook.state.Decide
+        (Events.Command.Create name, Aggregate.init Notebook.state)
+        ||> Aggregate.decide Notebook.state
         |> Validation.map _.ToReadOnlyList()
 
     static member AddNote noteId notebook =
         (Events.Command.AddNote noteId, notebook)
-        ||> Notebook.state.Decide
+        ||> Aggregate.decide Notebook.state
         |> Validation.map _.ToReadOnlyList()
 
     static member RemoveNote noteId notebook =
         (Events.Command.RemoveNote noteId, notebook)
-        ||> Notebook.state.Decide
+        ||> Aggregate.decide Notebook.state
         |> Validation.map _.ToReadOnlyList()
 
     static member Evolve notebook (events: IReadOnlyList<Events.Event>) =

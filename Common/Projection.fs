@@ -1,4 +1,4 @@
-namespace ParagonRobotics.DiamondScout.Common
+namespace ParagonRobotics.DiamondScout.Common.Projections
 
 open System.Collections.Generic
 
@@ -10,7 +10,7 @@ type Projection<'state, 'event> =
           Apply: Apply<'state, 'event> }
 
 [<AutoOpen>]
-module Functional =
+module Functional=
     [<RequireQualifiedAccess>]
     module Projection =
         let create initialState apply = { Init = initialState; Apply = apply }

@@ -3,6 +3,7 @@ namespace ParagonRobotics.DiamondScout.Common.TeamRegistries
 open System.Collections.Generic
 open FsToolkit.ErrorHandling
 open ParagonRobotics.DiamondScout.Common
+open ParagonRobotics.DiamondScout.Common.Aggregates
 open ParagonRobotics.DiamondScout.Common.Teams
 
 type TeamRegistry = private { Teams: Set<TeamNumber> }
@@ -69,13 +70,13 @@ module Functional =
 
 type TeamRegistry with
     static member RegisterTeam teamNumber =
-        (Events.Command.RegisterTeam teamNumber, TeamRegistry.state.Init)
-        ||> TeamRegistry.state.Decide
+        (Events.Command.RegisterTeam teamNumber, Aggregate.init TeamRegistry.state)
+        ||> Aggregate.decide TeamRegistry.state
         |> Validation.map _.ToReadOnlyList()
 
-    static member UnregisterTeam teamNumber =
-        (Events.Command.UnregisterTeam teamNumber, TeamRegistry.state.Init)
-        ||> TeamRegistry.state.Decide
+    static member UnregisterTeam teamNumber teams=
+        (Events.Command.UnregisterTeam teamNumber, teams)
+        ||> Aggregate.decide TeamRegistry.state
         |> Validation.map _.ToReadOnlyList()
 
     static member Evolve(registry: TeamRegistry, events: Events.Event IReadOnlyList) =

@@ -1,10 +1,11 @@
-﻿namespace ParagonRobotics.DiamondScout.Common
+﻿namespace ParagonRobotics.DiamondScout.Common.Aggregates
 
 open System.Collections.Generic
 open FsToolkit.ErrorHandling
+open ParagonRobotics.DiamondScout.Common
 
-type internal Evolve<'state, 'event> = 'state -> 'event -> 'state
-type internal Decide<'state, 'command, 'event, 'error> = 'command -> 'state -> Validation<'event list, 'error>
+type Evolve<'state, 'event> = 'state -> 'event -> 'state
+type Decide<'state, 'command, 'event, 'error> = 'command -> 'state -> Validation<'event list, 'error>
 
 type Aggregate<'state, 'command, 'event, 'error> =
     private
@@ -13,7 +14,7 @@ type Aggregate<'state, 'command, 'event, 'error> =
           Decide: Decide<'state, 'command, 'event, 'error> }
 
 [<AutoOpen>]
-module Functional =
+module Functional=
     [<RequireQualifiedAccess>]
     module Aggregate =
         let create initialState evolver decider =
@@ -21,8 +22,11 @@ module Functional =
               Evolve = evolver
               Decide = decider }
 
-        let fold state = List.fold state.Evolve
-        let rehydrate state = fold state state.Init
+        let fold aggregate = List.fold aggregate.Evolve
+        let rehydrate aggregate = fold aggregate aggregate.Init
+        let decide aggregate command state = aggregate.Decide command state
+        let evolve aggregate event = aggregate.Evolve event
+        let init aggregate = aggregate.Init
 
 type Aggregate<'state, 'command, 'event, 'error> with
     static member Create

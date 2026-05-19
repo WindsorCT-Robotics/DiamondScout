@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 open FsToolkit.ErrorHandling
 open ParagonRobotics.DiamondScout.Common
+open ParagonRobotics.DiamondScout.Common.Aggregates
 open ParagonRobotics.DiamondScout.Common.Notebooks
 
 [<Struct>]
@@ -112,13 +113,13 @@ module Functional =
 
 type Team with
     static member Register teamNumber teamName notebook =
-        (Events.Command.Register(teamNumber, teamName, notebook), Team.state.Init)
-        ||> Team.state.Decide
+        (Events.Command.Register(teamNumber, teamName, notebook), Aggregate.init Team.state)
+        ||> Aggregate.decide Team.state
         |> Validation.map _.ToReadOnlyList()
 
     static member Rename team newName =
         (Events.Command.ChangeName newName, team)
-        ||> Team.state.Decide
+        ||> Aggregate.decide Team.state
         |> Validation.map _.ToReadOnlyList()
 
     static member Evolve team (events: IReadOnlyList<Events.Event>) =

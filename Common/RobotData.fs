@@ -55,46 +55,47 @@ type EndgameCapable =
         | NotCapable -> notCapable.Invoke()
 
 type Robot =
-    { Name: RobotName
-      Team: TeamId
-      EndgameCapable: EndgameCapable
-      Drivetrain: Drivetrain
-      PitScoutingParameters: Map<ParameterDefinitionId, ParameterValue>
-      Notes: NotebookId }
-
-type Error =
-    | ParameterExists of ParameterDefinitionId
-    | ParameterDoesNotExist of ParameterDefinitionId
-    | RobotNameEmpty
-
-    member this.Handle
-        (
-            handleParameterExists: Action<ParameterDefinitionId>,
-            handleParameterDoesNotExist: Action<ParameterDefinitionId>,
-            handleRobotNameEmpty: Action
-        ) =
-        match this with
-        | ParameterExists id -> handleParameterExists.Invoke(id)
-        | ParameterDoesNotExist id -> handleParameterDoesNotExist.Invoke(id)
-        | RobotNameEmpty -> handleRobotNameEmpty.Invoke()
+    private
+        { Name: RobotName
+          Team: TeamId
+          EndgameCapable: EndgameCapable
+          Drivetrain: Drivetrain
+          PitScoutingParameters: Map<ParameterDefinitionId, ParameterValue>
+          Notes: NotebookId }
 
 [<RequireQualifiedAccess>]
 module Robot =
+    type Error =
+        | ParameterExists of ParameterDefinitionId
+        | ParameterDoesNotExist of ParameterDefinitionId
+        | RobotNameEmpty
+
+        member this.Handle
+            (
+                handleParameterExists: Action<ParameterDefinitionId>,
+                handleParameterDoesNotExist: Action<ParameterDefinitionId>,
+                handleRobotNameEmpty: Action
+            ) =
+            match this with
+            | ParameterExists id -> handleParameterExists.Invoke(id)
+            | ParameterDoesNotExist id -> handleParameterDoesNotExist.Invoke(id)
+            | RobotNameEmpty -> handleRobotNameEmpty.Invoke()
+
     [<RequireQualifiedAccess>]
     module private OnlyIf =
         let parameterDoesNotExist parameterId robot =
-            match robot.PitScoutingParameters.ContainsKey parameterId with
-            | true -> ParameterExists parameterId |> Validation.error
+            match Map.containsKey parameterId robot.PitScoutingParameters with
+            | true -> Error.ParameterExists parameterId |> Validation.error
             | false -> parameterId |> Validation.ok
 
         let parameterExists parameterId robot =
-            match robot.PitScoutingParameters.ContainsKey parameterId with
+            match Map.containsKey parameterId robot.PitScoutingParameters with
             | true -> parameterId |> Validation.ok
-            | false -> ParameterDoesNotExist parameterId |> Validation.error
+            | false -> Error.ParameterDoesNotExist parameterId |> Validation.error
 
         let robotNameNotEmpty (RobotName name as robotName) =
             match String.IsNullOrWhiteSpace name with
-            | true -> RobotNameEmpty |> Validation.error
+            | true -> Error.RobotNameEmpty |> Validation.error
             | false -> robotName |> Validation.ok
 
     let createWithParameters name team endgameCapability pitScoutingParams drivetrain notebook =
@@ -125,7 +126,7 @@ module Robot =
 
             return
                 { robot with
-                    PitScoutingParameters = robot.PitScoutingParameters.Add(parameterId, value) }
+                    PitScoutingParameters = Map.add parameterId value robot.PitScoutingParameters }
         }
 
     let changePitScoutingParameter parameterId value robot =
@@ -134,7 +135,7 @@ module Robot =
 
             return
                 { robot with
-                    PitScoutingParameters = robot.PitScoutingParameters.Add(parameterId, value) }
+                    PitScoutingParameters = Map.add parameterId value robot.PitScoutingParameters }
         }
 
     let removePitScoutingParameter parameterId robot =
@@ -143,5 +144,5 @@ module Robot =
 
             return
                 { robot with
-                    PitScoutingParameters = robot.PitScoutingParameters.Remove(parameterId) }
+                    PitScoutingParameters = Map.remove parameterId robot.PitScoutingParameters }
         }

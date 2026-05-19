@@ -5,6 +5,7 @@ open FsToolkit.ErrorHandling
 open FSharp.Collections
 open ParagonRobotics.DiamondScout.Common
 open ParagonRobotics.DiamondScout.Common.Users
+open ParagonRobotics.DiamondScout.Common.Aggregates
 
 /// Username normalized for purposes of comparison.
 [<Struct>]
@@ -110,18 +111,18 @@ module Functional =
 
 type UserDirectory with
     static member Register(userId: UserId, name: UserName) =
-        (Events.Command.Register(userId, name), UserDirectory.state.Init)
-        ||> UserDirectory.state.Decide
+        (Events.Command.Register(userId, name), Aggregate.init UserDirectory.state)
+        ||> Aggregate.decide UserDirectory.state
         |> Validation.map _.ToReadOnlyList()
 
     static member ChangeName(users: UserDirectory, userId: UserId, name: UserName) =
         (Events.Command.ChangeName(userId, name), users)
-        ||> UserDirectory.state.Decide
+        ||> Aggregate.decide UserDirectory.state    
         |> Validation.map _.ToReadOnlyList()
 
     static member Deactivate(users: UserDirectory, userId: UserId) =
         (Events.Command.Deactivate(userId), users)
-        ||> UserDirectory.state.Decide
+        ||> Aggregate.decide UserDirectory.state    
         |> Validation.map _.ToReadOnlyList()
 
     static member Evolve(users: UserDirectory, events: Events.Event IReadOnlyList) =

@@ -1,4 +1,4 @@
-namespace ParagonRobotics.DiamondScout.Common.Matches
+namespace ParagonRobotics.DiamondScout.Common.Results
 
 open System
 open FsToolkit.ErrorHandling
@@ -10,6 +10,7 @@ open ParagonRobotics.DiamondScout.Common.Teams
 open ParagonRobotics.DiamondScout.Common.GamePieces
 open ParagonRobotics.DiamondScout.Common.Parameters
 open ParagonRobotics.DiamondScout.Common.Robots
+open ParagonRobotics.DiamondScout.Common.Matches
 
 [<Struct>]
 type ScoutingResultId =
@@ -22,51 +23,6 @@ type ScoutingResultId =
         Guid.CreateVersion7() |> ScoutingResultId
 
     member this.Value = let (ScoutingResultId guid) = this in guid
-
-[<Struct>]
-type MatchNumber = MatchNumber of uint
-
-[<Struct>]
-[<RequireQualifiedAccess>]
-type TournamentLevel =
-    | None
-    | Practice
-    | Qualification
-    | Playoff
-
-[<Struct>]
-type DistrictCode = DistrictCode of string
-
-[<Struct>]
-type DistrictName = DistrictName of string
-
-type District =
-    { Code: DistrictCode
-      Name: DistrictName }
-
-[<Struct>]
-type EventCode = EventCode of string
-
-[<Struct>]
-type EventName = EventName of string
-
-type FrcEvent = { Code: EventCode; Name: EventName }
-
-type EventMatchDetails =
-    { District: District
-      Event: FrcEvent
-      TournamentLevel: TournamentLevel
-      MatchNumber: MatchNumber }
-
-[<Struct>]
-type Alliance =
-    | Red
-    | Blue
-
-    member this.Match(redAction: Action, blueAction: Action) =
-        match this with
-        | Red -> redAction
-        | Blue -> blueAction
 
 [<Struct>]
 [<RequireQualifiedAccess>]
@@ -115,8 +71,7 @@ type ScoreRecord =
       Phase: TimeframeId }
 
 type ScoutingData =
-    { Team: TeamId
-      MatchDetails: EventMatchDetails
+    { MatchId: MatchId
       Alliance: Alliance
       Scores: ScoreRecord list
       ScoutingParameters: Map<ParameterDefinitionId, ParameterValue>
@@ -129,7 +84,7 @@ type ScoutingData =
 type ScoutingResult =
     | Finalized of ScoutingData
     | Scouting of ScoutingData
-    | NotStarted of ScoutingData
+    | NotStarted of matchId: MatchId * alliance: Alliance
 
 type Error =
     | ScoutingNotStarted
@@ -144,7 +99,6 @@ type Error =
     | InvalidParameterId of parameterId: ParameterDefinitionId
     | InvalidNoteId of noteId: NoteId
     | InvalidTimeframeId of timeframeId: TimeframeId
-
 
 [<AutoOpen>]
 module Functional =
@@ -162,21 +116,21 @@ module Functional =
                 match scoutingResult with
                 | ScoutingResult.Scouting data -> data |> Validation.ok
                 | ScoutingResult.Finalized data -> data |> Validation.ok
-                | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
+                | ScoutingResult.NotStarted _ -> Error.ScoutingNotStarted |> Validation.error
 
             let scoutingIsInProgress scoutingResult =
                 match scoutingResult with
                 | ScoutingResult.Scouting data -> data |> Validation.ok
-                | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
+                | ScoutingResult.NotStarted _ -> Error.ScoutingNotStarted |> Validation.error
                 | ScoutingResult.Finalized _ -> Error.ScoutingResultFinalized |> Validation.error
 
             let parameterDoesNotExist scoutingData parameterId =
-                match scoutingData.ScoutingParameters.ContainsKey parameterId with
+                match Map.containsKey parameterId scoutingData.ScoutingParameters with
                 | true -> ParameterExists parameterId |> Validation.error
                 | false -> parameterId |> Validation.ok
 
             let parameterExists scoutingData parameterId =
-                match scoutingData.ScoutingParameters.ContainsKey parameterId with
+                match Map.containsKey parameterId scoutingData.ScoutingParameters with
                 | true -> parameterId |> Validation.ok
                 | false -> ParameterDoesNotExist parameterId |> Validation.error
 
@@ -219,17 +173,13 @@ module Functional =
                 match scoutingResult with
                 | ScoutingResult.Finalized data -> data |> Validation.ok
                 | ScoutingResult.Scouting _ -> Error.ScoutingInProgress |> Validation.error
-                | ScoutingResult.NotStarted -> Error.ScoutingNotStarted |> Validation.error
+                | ScoutingResult.NotStarted _ -> Error.ScoutingNotStarted |> Validation.error
 
-        let startScouting team alliance endgameCapability matchDetails =
+        let startScouting matchId alliance endgameCapability =
             validation {
-                do! OnlyIf.scoutingIsNotStarted ScoutingResult.NotStarted
-                let! team = OnlyIf.teamIdValid team
-
                 return
-                    { Team = team
+                    { MatchId = matchId
                       Alliance = alliance
-                      MatchDetails = matchDetails
                       Scores = []
                       Endgame =
                         { Capable = endgameCapability
@@ -241,22 +191,6 @@ module Functional =
                     |> ScoutingResult.Scouting
             }
 
-        let changeMatchDetails matchDetails scoutingResult =
-            validation {
-                match scoutingResult with
-                | ScoutingResult.Scouting scoutingData ->
-                    return
-                        { scoutingData with
-                            MatchDetails = matchDetails }
-                        |> ScoutingResult.Scouting
-                | ScoutingResult.Finalized scoutingData ->
-                    return
-                        { scoutingData with
-                            MatchDetails = matchDetails }
-                        |> ScoutingResult.Finalized
-                | ScoutingResult.NotStarted -> return! Error.ScoutingNotStarted |> Validation.error
-            }
-
         let recordScore phase gamePiece tier scoutingResult =
             validation {
                 let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
@@ -265,7 +199,7 @@ module Functional =
                 return
                     { scoutingData with
                         Scores =
-                            let newScore = ScoreRecord.Create gamePiece tier phase
+                            let newScore = { GamePiece = gamePiece; Tier = tier; Phase = phase }
                             newScore :: scoutingData.Scores }
                     |> ScoutingResult.Scouting
             }
@@ -301,9 +235,11 @@ module Functional =
                     |> ScoutingResult.Scouting
             }
 
-        let addOrReplaceNote noteId scoutingResult =
+        let addNote noteId scoutingResult =
             validation {
                 let! scoutingData = OnlyIf.scoutingIsStarted scoutingResult
+                let! noteId = OnlyIf.noteIdValid noteId
+                let! noteId = OnlyIf.noteIdUnique scoutingData noteId
 
                 let updatedData =
                     { scoutingData with
@@ -335,11 +271,10 @@ module Functional =
             validation {
                 let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
                 let! parameterId = OnlyIf.parameterIdValid parameterId
-                let! parameterId = OnlyIf.parameterDoesNotExist scoutingData parameterId
 
                 return
                     { scoutingData with
-                        ScoutingParameters = scoutingData.ScoutingParameters |> Map.add parameterId value }
+                        ScoutingParameters = Map.add parameterId value scoutingData.ScoutingParameters }
                     |> ScoutingResult.Scouting
             }
 
@@ -351,23 +286,30 @@ module Functional =
 
                 return
                     { scoutingData with
-                        ScoutingParameters = scoutingData.ScoutingParameters |> Map.remove parameterId }
+                        ScoutingParameters = Map.remove parameterId scoutingData.ScoutingParameters }
                     |> ScoutingResult.Scouting
             }
 
-        let mustBeFinalized scoutingResult =
-            OnlyIf.scoutingIsFinalized scoutingResult
-
-        let finalize scoutingData =
+        let finalize scoutingResult =
             validation {
-                let! scoutingData = OnlyIf.scoutingIsInProgress scoutingData
+                let! scoutingData = OnlyIf.scoutingIsInProgress scoutingResult
 
                 return ScoutingResult.Finalized scoutingData
             }
 
-        let reopen scoutingData =
+        let reopen scoutingResult =
             validation {
-                let! scoutingData = OnlyIf.scoutingIsFinalized scoutingData
+                let! scoutingData = OnlyIf.scoutingIsFinalized scoutingResult
 
                 return ScoutingResult.Scouting scoutingData
             }
+
+type ScoutingResult with
+    static member Start(matchId, alliance, endgameCapability) =
+        ScoutingResult.startScouting matchId alliance endgameCapability
+
+    static member RecordScore(phase, gamePiece, tier, scoutingResult) =
+        ScoutingResult.recordScore phase gamePiece tier scoutingResult
+
+    static member Finalize(scoutingResult) =
+        ScoutingResult.finalize scoutingResult
